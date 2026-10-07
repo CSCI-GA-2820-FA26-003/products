@@ -37,7 +37,7 @@ class Product(db.Model):
     description = db.Column(db.String(256))
     category = db.Column(db.String(63))
 
-    price = db.Column(db.Numeric)
+    price = db.Column(db.Numeric(10, 2))
 
     stock = db.Column(db.Integer)
 
