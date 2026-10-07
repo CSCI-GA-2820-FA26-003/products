@@ -171,9 +171,6 @@ class Product(db.Model):
             self.stock = data.get("stock", None)
             self.image_url = data.get("image_url", None)
             self.validate()
-        # AttributeError handling seems unnecessary since we wouldn't deserialize non-exist attributes
-        # except AttributeError as error:
-        #     raise DataValidationError("Invalid attribute: " + error.args[0]) from error
 
         except KeyError as error:
             raise DataValidationError(
