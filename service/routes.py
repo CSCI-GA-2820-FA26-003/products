@@ -23,7 +23,7 @@ and Delete Product
 
 from flask import jsonify, request, url_for, abort
 from flask import current_app as app  # Import Flask application
-from service.models import Product
+from service.models import Product, DataValidationError
 from service.common import status  # HTTP Status Codes
 
 
@@ -44,3 +44,26 @@ def index():
 ######################################################################
 
 # Todo: Place your REST API code here ...
+
+@app.route("/products", methods=["POST"])
+def create_product():
+    """Create a new product"""
+
+    if not request.is_json:
+        abort(415, description="Content-Type must be application/json")
+
+    data = request.get_json()
+
+    if not isinstance(data, dict):
+        abort(400, description="Invalid product data")
+
+    product = Product()
+
+    try:
+        product.deserialize(data)
+    except DataValidationError as error:
+        abort(400, description=str(error))
+
+    product.create()
+
+    return jsonify(product.serialize()), status.HTTP_201_CREATED
