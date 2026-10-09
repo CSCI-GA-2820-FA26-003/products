@@ -73,3 +73,29 @@ class TestYourResourceService(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
     # Todo: Add your test cases here...
+
+    def test_create_product(self):
+        """Test creating a product"""
+        product_data = {
+            "name": "Test Product",
+            "description": "A test product",
+            "category": "Electronics",
+            "price": "19.99",
+            "stock": 10
+        }
+
+        # Check the database is empty
+        self.assertEqual(Product.query.count(), 0)
+
+        # Create a product
+        response = self.client.post("/products", json=product_data)
+
+        # Check the response
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Check the database has one product
+        self.assertEqual(Product.query.count(), 1)
+
+        # Check the product name
+        data = response.get_json()
+        self.assertEqual(data["name"], "Test Product")
