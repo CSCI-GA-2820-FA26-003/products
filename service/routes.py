@@ -47,5 +47,16 @@ def index():
 ######################################################################
 #  R E S T   A P I   E N D P O I N T S
 ######################################################################
+@app.route("/products/<int:product_id>", methods=["DELETE"])
+def delete_product(product_id):
+    """Delete a Product"""
+    app.logger.info("Request to delete product with id: %s", product_id)
 
-# Todo: Place your REST API code here ...
+    product = Product.find(product_id)
+
+    if not product:
+        abort(404, description="Product not found")
+
+    product.delete()
+
+    return "", status.HTTP_204_NO_CONTENT

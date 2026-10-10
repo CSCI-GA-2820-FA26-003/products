@@ -76,4 +76,26 @@ class TestYourResourceService(TestCase):
         self.assertEqual(data["version"], "1.0.0")
         self.assertEqual(data["list_url"], "/products")
 
-    # Todo: Add your test cases here...
+    def test_delete_product(self):
+        """It should delete a Product"""
+        product = Product(
+            name="Test Product",
+            description="A product for testing",
+            category="Electronics",
+            price=10.00,
+            stock=5,
+            image_url="https://example.com/product.jpg",
+        )
+        product.create()
+        product_id = product.id
+
+        resp = self.client.delete(f"/products/{product_id}")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertIsNone(Product.find(product_id))
+
+    def test_delete_product_not_found(self):
+        """It should return 404 when Product does not exist"""
+        resp = self.client.delete("/products/99999")
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
