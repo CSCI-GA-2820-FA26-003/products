@@ -19,6 +19,7 @@ TestProduct API Service Test Suite
 """
 
 # pylint: disable=duplicate-code
+from decimal import Decimal
 import os
 import json
 import logging
@@ -89,13 +90,20 @@ class TestYourResourceService(TestCase):
         test_product.create()
 
         # update the product
-        new_product = test_product.serialize()
+        new_product = ProductFactory()
+        new_product.id = test_product.serialize()["id"]
         logging.debug(new_product)
-        new_product["category"] = "unknown"
-        response = self.client.put(f"{BASE_URL}/{new_product['id']}", json=new_product)
+        response = self.client.put(
+            f"{BASE_URL}/{new_product.id}", json=new_product.serialize()
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         updated_product = response.get_json()
-        self.assertEqual(updated_product["category"], "unknown")
+        self.assertEqual(updated_product["name"], new_product.name)
+        self.assertEqual(updated_product["description"], new_product.description)
+        self.assertEqual(updated_product["category"], new_product.category)
+        self.assertEqual(Decimal(str(updated_product["price"])), new_product.price)
+        self.assertEqual(updated_product["stock"], new_product.stock)
+        self.assertEqual(updated_product["image_url"], new_product.image_url)
 
     def test_update_bad_id(self):
         """It should not update a Product if id does not exist"""
