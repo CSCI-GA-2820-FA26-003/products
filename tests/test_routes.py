@@ -25,10 +25,12 @@ from unittest import TestCase
 from wsgi import app
 from service.common import status
 from service.models import db, Product
+from .factories import ProductFactory
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
 )
+BASE_URL = "/products"
 
 
 ######################################################################
@@ -76,4 +78,18 @@ class TestYourResourceService(TestCase):
         self.assertEqual(data["version"], "1.0.0")
         self.assertEqual(data["list_url"], "/products")
 
-    # Todo: Add your test cases here...
+    def test_get_product(self):
+        """It should Get a single Product"""
+        test_product = ProductFactory()
+        test_product.create()
+        response = self.client.get(f"{BASE_URL}/{test_product.id}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data["name"], test_product.name)
+
+    def test_get_product_not_found(self):
+        """It should not Get a Product that is not found"""
+        response = self.client.get(f"{BASE_URL}/0")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("was not found", data["message"])
