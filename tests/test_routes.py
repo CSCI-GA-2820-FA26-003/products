@@ -103,6 +103,27 @@ class TestYourResourceService(TestCase):
         # Check the product name
         data = response.get_json()
         self.assertEqual(data["name"], "Test Product")
+        self.assertIn("Location", response.headers)
+        self.assertEqual(
+            response.headers["Location"],
+            f"/products/{data['id']}"
+        )
+        def test_create_product_bad_request(self):
+            """Test creating a product with invalid data"""
+            response = self.client.post(
+                "/products",
+                json=["invalid", "data"]
+            )
+            self.assertEqual(response.status_code, 400)
+
+    def test_create_product_invalid_content_type(self):
+        """Test creating a product without JSON"""
+        response = self.client.post(
+            "/products",
+            data="not json",
+            content_type="text/plain"
+        )
+        self.assertEqual(response.status_code, 415)
     def test_delete_product(self):
         """It should delete a Product"""
         product = Product(

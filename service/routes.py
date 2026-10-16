@@ -83,5 +83,8 @@ def create_product():
         abort(400, description=str(error))
 
     product.create()
+    app.logger.info("Product with id [%s] saved!", product.id)
 
-    return jsonify(product.serialize()), status.HTTP_201_CREATED
+    response = jsonify(product.serialize())
+    response.headers["Location"] = f"/products/{product.id}"
+    return response, status.HTTP_201_CREATED
