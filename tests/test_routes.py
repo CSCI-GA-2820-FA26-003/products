@@ -76,6 +76,60 @@ class TestYourResourceService(TestCase):
         self.assertEqual(data["version"], "1.0.0")
         self.assertEqual(data["list_url"], "/products")
 
+    # Todo: Add your test cases here...
+
+    def test_create_product(self):
+        """Test creating a product"""
+        product_data = {
+            "name": "Test Product",
+            "description": "A test product",
+            "category": "Electronics",
+            "price": "19.99",
+            "stock": 10
+        }
+
+        # Check the database is empty
+        self.assertEqual(Product.query.count(), 0)
+
+        # Create a product
+        response = self.client.post("/products", json=product_data)
+
+        # Check the response
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Check the database has one product
+        self.assertEqual(Product.query.count(), 1)
+
+        # Check the product name
+        data = response.get_json()
+        self.assertEqual(data["name"], "Test Product")
+        self.assertIn("Location", response.headers)
+        self.assertEqual(
+            response.headers["Location"],
+            f"/products/{data['id']}"
+        )
+        def test_create_product_bad_request(self):
+            """Test creating a product with invalid data"""
+            response = self.client.post(
+                "/products",
+                json=["invalid", "data"]
+            )
+            self.assertEqual(response.status_code, 400)
+    def test_create_product_invalid_fields(self):
+        """Test creating a product with missing fields"""
+        response = self.client.post(
+            "/products",
+            json={"description": "Test Product"}
+        )
+        self.assertEqual(response.status_code, 400)
+    def test_create_product_invalid_content_type(self):
+        """Test creating a product without JSON"""
+        response = self.client.post(
+            "/products",
+            data="not json",
+            content_type="text/plain"
+        )
+        self.assertEqual(response.status_code, 415)
     def test_delete_product(self):
         """It should delete a Product"""
         product = Product(

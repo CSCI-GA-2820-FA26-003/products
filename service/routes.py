@@ -23,7 +23,7 @@ and Delete Product
 
 from flask import jsonify, request, url_for, abort
 from flask import current_app as app  # Import Flask application
-from service.models import Product
+from service.models import Product, DataValidationError
 from service.common import status  # HTTP Status Codes
 
 
@@ -51,12 +51,40 @@ def index():
 def delete_product(product_id):
     """Delete a Product"""
     app.logger.info("Request to delete product with id: %s", product_id)
-
     product = Product.find(product_id)
 
     if not product:
-        abort(404, description="Product not found")
+                abort(404, description="Product not found")
 
     product.delete()
 
     return "", status.HTTP_204_NO_CONTENT
+
+
+# Todo: Place your REST API code here ...
+
+@app.route("/products", methods=["POST"])
+def create_product():
+    """Create a new product"""
+
+    if not request.is_json:
+        abort(415, description="Content-Type must be application/json")
+
+    data = request.get_json()
+
+    if not isinstance(data, dict):
+        abort(400, description="Invalid product data")
+
+    product = Product()
+
+    try:
+        product.deserialize(data)
+    except DataValidationError as error:
+        abort(400, description=str(error))
+
+    product.create()
+    app.logger.info("Product with id [%s] saved!", product.id)
+
+    response = jsonify(product.serialize())
+    response.headers["Location"] = f"/products/{product.id}"
+    return response, status.HTTP_201_CREATED
