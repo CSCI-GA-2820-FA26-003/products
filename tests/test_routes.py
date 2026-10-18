@@ -93,3 +93,72 @@ class TestYourResourceService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         data = response.get_json()
         self.assertIn("was not found", data["message"])
+
+    def test_create_product(self):
+        """Test creating a product"""
+        product_data = {
+            "name": "Test Product",
+            "description": "A test product",
+            "category": "Electronics",
+            "price": "19.99",
+            "stock": 10,
+        }
+
+        # Check the database is empty
+        self.assertEqual(Product.query.count(), 0)
+
+        # Create a product
+        response = self.client.post("/products", json=product_data)
+
+        # Check the response
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Check the database has one product
+        self.assertEqual(Product.query.count(), 1)
+
+        # Check the product name
+        data = response.get_json()
+        self.assertEqual(data["name"], "Test Product")
+        self.assertIn("Location", response.headers)
+        self.assertEqual(response.headers["Location"], f"/products/{data['id']}")
+
+        def test_create_product_bad_request(self):
+            """Test creating a product with invalid data"""
+            response = self.client.post("/products", json=["invalid", "data"])
+            self.assertEqual(response.status_code, 400)
+
+    def test_create_product_invalid_fields(self):
+        """Test creating a product with missing fields"""
+        response = self.client.post("/products", json={"description": "Test Product"})
+        self.assertEqual(response.status_code, 400)
+
+    def test_create_product_invalid_content_type(self):
+        """Test creating a product without JSON"""
+        response = self.client.post(
+            "/products", data="not json", content_type="text/plain"
+        )
+        self.assertEqual(response.status_code, 415)
+
+    def test_delete_product(self):
+        """It should delete a Product"""
+        product = Product(
+            name="Test Product",
+            description="A product for testing",
+            category="Electronics",
+            price=10.00,
+            stock=5,
+            image_url="https://example.com/product.jpg",
+        )
+        product.create()
+        product_id = product.id
+
+        resp = self.client.delete(f"/products/{product_id}")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertIsNone(Product.find(product_id))
+
+    def test_delete_product_not_found(self):
+        """It should return 404 when Product does not exist"""
+        resp = self.client.delete("/products/99999")
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
