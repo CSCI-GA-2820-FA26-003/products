@@ -27,7 +27,7 @@ from unittest import TestCase
 from wsgi import app
 from service.common import status
 from service.models import db, Product
-from .factories import ProductFactory
+from tests.factories import ProductFactory
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
@@ -108,7 +108,7 @@ class TestYourResourceService(TestCase):
         response = self.client.get(BASE_URL)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.get_json(), [])
-    # Todo: Add your test cases here...
+
     def test_get_product(self):
         """It should Get a single Product"""
         test_product = ProductFactory()
@@ -155,10 +155,10 @@ class TestYourResourceService(TestCase):
         self.assertIn("Location", response.headers)
         self.assertEqual(response.headers["Location"], f"/products/{data['id']}")
 
-        def test_create_product_bad_request(self):
-            """Test creating a product with invalid data"""
-            response = self.client.post("/products", json=["invalid", "data"])
-            self.assertEqual(response.status_code, 400)
+    def test_create_product_bad_request(self):
+        """Test creating a product with invalid data"""
+        response = self.client.post("/products", json=["invalid", "data"])
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_create_product_invalid_fields(self):
         """Test creating a product with missing fields"""
