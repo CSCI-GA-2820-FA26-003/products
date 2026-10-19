@@ -26,6 +26,7 @@ from wsgi import app
 from service.common import status
 from service.models import db, Product
 from tests.factories import ProductFactory
+from .factories import ProductFactory
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
@@ -107,6 +108,21 @@ class TestYourResourceService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.get_json(), [])
     # Todo: Add your test cases here...
+    def test_get_product(self):
+        """It should Get a single Product"""
+        test_product = ProductFactory()
+        test_product.create()
+        response = self.client.get(f"{BASE_URL}/{test_product.id}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data["name"], test_product.name)
+
+    def test_get_product_not_found(self):
+        """It should not Get a Product that is not found"""
+        response = self.client.get(f"{BASE_URL}/0")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("was not found", data["message"])
 
     def test_create_product(self):
         """Test creating a product"""
@@ -115,7 +131,7 @@ class TestYourResourceService(TestCase):
             "description": "A test product",
             "category": "Electronics",
             "price": "19.99",
-            "stock": 10
+            "stock": 10,
         }
 
         # Check the database is empty
@@ -134,32 +150,25 @@ class TestYourResourceService(TestCase):
         data = response.get_json()
         self.assertEqual(data["name"], "Test Product")
         self.assertIn("Location", response.headers)
-        self.assertEqual(
-            response.headers["Location"],
-            f"/products/{data['id']}"
-        )
+        self.assertEqual(response.headers["Location"], f"/products/{data['id']}")
+
         def test_create_product_bad_request(self):
             """Test creating a product with invalid data"""
-            response = self.client.post(
-                "/products",
-                json=["invalid", "data"]
-            )
+            response = self.client.post("/products", json=["invalid", "data"])
             self.assertEqual(response.status_code, 400)
+
     def test_create_product_invalid_fields(self):
         """Test creating a product with missing fields"""
-        response = self.client.post(
-            "/products",
-            json={"description": "Test Product"}
-        )
+        response = self.client.post("/products", json={"description": "Test Product"})
         self.assertEqual(response.status_code, 400)
+
     def test_create_product_invalid_content_type(self):
         """Test creating a product without JSON"""
         response = self.client.post(
-            "/products",
-            data="not json",
-            content_type="text/plain"
+            "/products", data="not json", content_type="text/plain"
         )
         self.assertEqual(response.status_code, 415)
+
     def test_delete_product(self):
         """It should delete a Product"""
         product = Product(
