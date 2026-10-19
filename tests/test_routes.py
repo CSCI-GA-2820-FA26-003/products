@@ -186,6 +186,7 @@ class TestYourResourceService(TestCase):
         )
         self.assertEqual(response.status_code, 415)
 
+<<<<<<< Updated upstream
 
     # ----------------------------------------------------------
     # TEST GET
@@ -198,13 +199,26 @@ class TestYourResourceService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.get_json()
         self.assertEqual(data["name"], test_product.name)
+=======
+    # # ----------------------------------------------------------
+    # # TEST GET
+    # # ----------------------------------------------------------
+    # def test_get_product(self):
+    #     """It should Get a single Product"""
+    #     test_product = ProductFactory()
+    #     test_product.create()
+    #     response = self.client.get(f"{BASE_URL}/{test_product.id}")
+    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
+    #     data = response.get_json()
+    #     self.assertEqual(data["name"], test_product.name)
+>>>>>>> Stashed changes
 
-    def test_get_product_not_found(self):
-        """It should not Get a Product that is not found"""
-        response = self.client.get(f"{BASE_URL}/0")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        data = response.get_json()
-        self.assertIn("was not found", data["message"])
+    # def test_get_product_not_found(self):
+    #     """It should not Get a Product that is not found"""
+    #     response = self.client.get(f"{BASE_URL}/0")
+    #     self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    #     data = response.get_json()
+    #     self.assertIn("was not found", data["message"])
 
         
     # ----------------------------------------------------------
