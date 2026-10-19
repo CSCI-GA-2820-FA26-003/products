@@ -27,7 +27,6 @@ from unittest import TestCase
 from wsgi import app
 from service.common import status
 from service.models import db, Product
-from tests.factories import ProductFactory
 from .factories import ProductFactory
 
 DATABASE_URI = os.getenv(
