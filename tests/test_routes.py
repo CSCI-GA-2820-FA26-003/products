@@ -153,17 +153,13 @@ class TestYourResourceService(TestCase):
         data = response.get_json()
         self.assertEqual(data["name"], "Test Product")
         self.assertIn("Location", response.headers)
-        self.assertEqual(
-            response.headers["Location"],
-            f"/products/{data['id']}"
-        )
+        self.assertEqual(response.headers["Location"], f"/products/{data['id']}")
+
     def test_create_product_bad_request(self):
         """Test creating a product with invalid data"""
-        response = self.client.post(
-            "/products",
-            json=["invalid", "data"]
-        )
+        response = self.client.post("/products", json=["invalid", "data"])
         self.assertEqual(response.status_code, 400)
+
     def test_create_product_invalid_fields(self):
         """Test creating a product with missing fields"""
         response = self.client.post("/products", json={"description": "Test Product"})
