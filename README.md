@@ -1,68 +1,114 @@
-# NYU DevOps Project Template
+# NYU DevOps Project - Products Service
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/Language-Python-blue.svg)](https://python.org/)
-
-This is a skeleton you can use to start your projects.
-
-**Note:** _Feel free to overwrite this `README.md` file with the one that describes your project._
 
 ## Overview
 
-This project template contains starter code for your class project. The `/service` folder contains your `models.py` file for your model and a `routes.py` file for your service. The `/tests` folder has test case starter code for testing the model and the service separately. All you need to do is add your functionality. You can use the [lab-flask-tdd](https://github.com/nyu-devops/lab-flask-tdd) for code examples to copy from.
+The Products service is a RESTful microservice for an eCommerce application. It manages the items a customer can buy, and supports Create, Read, Update, Delete, and List (CRUD + L) operations. All responses, including errors, are returned as JSON.
 
-## Automatic Setup
+## Setup
 
-The best way to use this repo is to start your own repo using it as a git template. To do this just press the green **Use this template** button in GitHub and this will become the source for your repository.
+### Prerequisites
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- [Visual Studio Code](https://code.visualstudio.com/) with the **Dev Containers** extension
 
-## Manual Setup
-
-You can also clone this repository and then copy and paste the starter code into your project repo folder on your local computer. Be careful not to copy over your own `README.md` file so be selective in what you copy.
-
-There are 4 hidden files that you will need to copy manually if you use the Mac Finder or Windows Explorer to copy files from this folder into your repo folder.
-
-These should be copied using a bash shell as follows:
-
+### Running the service locally
+1. Clone the repository:
 ```bash
-    cp .gitignore  ../<your_repo_folder>/
-    cp .flaskenv ../<your_repo_folder>/
-    cp .gitattributes ../<your_repo_folder>/
+   git clone https://github.com/CSCI-GA-2820-FA26-003/products.git
+   cd products
+   code .
+```
+2. When VS Code opens, click **Reopen in Container**. This starts the app and a PostgreSQL database.
+3. Create the database tables:
+```bash
+   flask db-create
+```
+4. Start the service:
+```bash
+   honcho start
+```
+5. Open http://localhost:8080 in your browser.
+
+## Running Tests
+
+Run the linter (PEP8 checks):
+```bash
+make lint
 ```
 
-## Contents
+Run the unit tests with coverage (minimum 95%):
+```bash
+make test
+```
 
-The project contains the following:
+## API Endpoints
+
+| Method | URL | Description | Success Code | Error Codes |
+|--------|-----|-------------|--------------|-------------|
+| GET | `/` | Returns service name, version, and list URL | 200 OK | — |
+| POST | `/products` | Creates a new product | 201 Created | 400 Bad Request, 415 Unsupported Media Type |
+| GET | `/products` | Lists all products | 200 OK | — |
+| GET | `/products/{id}` | Reads a single product | 200 OK | 404 Not Found |
+| PUT | `/products/{id}` | Updates an existing product | 200 OK | 400 Bad Request, 404 Not Found, 415 Unsupported Media Type |
+| DELETE | `/products/{id}` | Deletes a product | 204 No Content | 404 Not Found |
+
+### Example: Create a product
+Request:
+```bash
+curl -X POST http://localhost:8080/products \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Blue Shirt", "description": "Cotton t-shirt", "category": "Clothing", "price": "19.99", "stock": 10}'
+```
+Response (`201 Created`, with a `Location` header pointing to the new product):
+```json
+{
+  "id": 1,
+  "name": "Blue Shirt",
+  "description": "Cotton t-shirt",
+  "category": "Clothing",
+  "price": "19.99",
+  "stock": 10,
+  "image_url": null,
+  "created_at": "2026-10-19T12:00:00",
+  "updated_at": "2026-10-19T12:00:00"
+}
+```
+
+## Product Model
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| id | Integer | Auto | Assigned by the database |
+| name | String (63) | Yes | Cannot be empty |
+| description | String (256) | No | |
+| category | String (63) | No | |
+| price | Decimal (Numeric) | No | Stored as Numeric, not Float; cannot be negative |
+| stock | Integer | No | Cannot be negative |
+| image_url | String (512) | No | |
+| created_at | DateTime | Auto | Set when the product is created |
+| updated_at | DateTime | Auto | Updated on every change |
+
+## Project Structure
 
 ```text
-.gitignore          - this will ignore vagrant and other metadata files
-.flaskenv           - Environment variables to configure Flask
-.gitattributes      - File to gix Windows CRLF issues
-.devcontainers/     - Folder with support for VSCode Remote Containers
-dot-env-example     - copy to .env to use environment variables
-pyproject.toml      - Poetry list of Python libraries required by your code
+service/                - service Python package
+├── __init__.py         - package initializer
+├── config.py           - configuration parameters
+├── models.py           - Product model
+├── routes.py           - REST API routes
+└── common/             - common code (error handlers, logging, status codes)
 
-service/                   - service python package
-├── __init__.py            - package initializer
-├── config.py              - configuration parameters
-├── models.py              - module with business models
-├── routes.py              - module with service routes
-└── common                 - common code package
-    ├── cli_commands.py    - Flask command to recreate all tables
-    ├── error_handlers.py  - HTTP error handling code
-    ├── log_handlers.py    - logging setup code
-    └── status.py          - HTTP status constants
-
-tests/                     - test cases package
-├── __init__.py            - package initializer
-├── factories.py           - Factory for testing with fake objects
-├── test_cli_commands.py   - test suite for the CLI
-├── test_models.py         - test suite for business models
-└── test_routes.py         - test suite for service routes
+tests/                  - test cases package
+├── factories.py        - factory for generating fake products
+├── test_models.py      - test suite for the Product model
+└── test_routes.py      - test suite for the REST API routes
 ```
 
 ## License
 
-Copyright (c) 2016, 2025 [John Rofrano](https://www.linkedin.com/in/JohnRofrano/). All rights reserved.
+Copyright (c) 2016, 2026 [John Rofrano](https://www.linkedin.com/in/JohnRofrano/). All rights reserved.
 
 Licensed under the Apache License. See [LICENSE](LICENSE)
 
