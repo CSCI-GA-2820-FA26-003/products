@@ -109,21 +109,21 @@ class TestYourResourceService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.get_json(), [])
 
-    def test_get_product(self):
-        """It should Get a single Product"""
-        test_product = ProductFactory()
-        test_product.create()
-        response = self.client.get(f"{BASE_URL}/{test_product.id}")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        data = response.get_json()
-        self.assertEqual(data["name"], test_product.name)
+    # def test_get_product(self):
+    #     """It should Get a single Product"""
+    #     test_product = ProductFactory()
+    #     test_product.create()
+    #     response = self.client.get(f"{BASE_URL}/{test_product.id}")
+    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
+    #     data = response.get_json()
+    #     self.assertEqual(data["name"], test_product.name)
 
-    def test_get_product_not_found(self):
-        """It should not Get a Product that is not found"""
-        response = self.client.get(f"{BASE_URL}/0")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        data = response.get_json()
-        self.assertIn("was not found", data["message"])
+    # def test_get_product_not_found(self):
+    #     """It should not Get a Product that is not found"""
+    #     response = self.client.get(f"{BASE_URL}/0")
+    #     self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    #     data = response.get_json()
+    #     self.assertIn("was not found", data["message"])
 
     # TEST CREATE
     # ----------------------------------------------------------
@@ -153,27 +153,13 @@ class TestYourResourceService(TestCase):
         data = response.get_json()
         self.assertEqual(data["name"], "Test Product")
         self.assertIn("Location", response.headers)
-<<<<<<< HEAD
         self.assertEqual(response.headers["Location"], f"/products/{data['id']}")
 
     def test_create_product_bad_request(self):
         """Test creating a product with invalid data"""
         response = self.client.post("/products", json=["invalid", "data"])
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-=======
-        self.assertEqual(
-            response.headers["Location"],
-            f"/products/{data['id']}"
-        )
-    def test_create_product_bad_request(self):
-        """Test creating a product with invalid data"""
-        response = self.client.post(
-            "/products",
-            json=["invalid", "data"]
-        )
         self.assertEqual(response.status_code, 400)
->>>>>>> 5f417b0 (Fix indentation for test_create_product_bad_request)
+
     def test_create_product_invalid_fields(self):
         """Test creating a product with missing fields"""
         response = self.client.post("/products", json={"description": "Test Product"})
@@ -186,8 +172,6 @@ class TestYourResourceService(TestCase):
         )
         self.assertEqual(response.status_code, 415)
 
-<<<<<<< Updated upstream
-
     # ----------------------------------------------------------
     # TEST GET
     # ----------------------------------------------------------
@@ -199,28 +183,14 @@ class TestYourResourceService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.get_json()
         self.assertEqual(data["name"], test_product.name)
-=======
-    # # ----------------------------------------------------------
-    # # TEST GET
-    # # ----------------------------------------------------------
-    # def test_get_product(self):
-    #     """It should Get a single Product"""
-    #     test_product = ProductFactory()
-    #     test_product.create()
-    #     response = self.client.get(f"{BASE_URL}/{test_product.id}")
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     data = response.get_json()
-    #     self.assertEqual(data["name"], test_product.name)
->>>>>>> Stashed changes
 
-    # def test_get_product_not_found(self):
-    #     """It should not Get a Product that is not found"""
-    #     response = self.client.get(f"{BASE_URL}/0")
-    #     self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-    #     data = response.get_json()
-    #     self.assertIn("was not found", data["message"])
+    def test_get_product_not_found(self):
+        """It should not Get a Product that is not found"""
+        response = self.client.get(f"{BASE_URL}/0")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("was not found", data["message"])
 
-        
     # ----------------------------------------------------------
     # TEST DELETE
     # ----------------------------------------------------------

@@ -106,6 +106,7 @@ def create_product():
     response.headers["Location"] = f"/products/{product.id}"
     return response, status.HTTP_201_CREATED
 
+
 ######################################################################
 # READ A PRODUCT
 ######################################################################
