@@ -27,7 +27,7 @@ from unittest import TestCase
 from wsgi import app
 from service.common import status
 from service.models import db, Product
-from .factories import ProductFactory
+from tests.factories import ProductFactory
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
@@ -67,6 +67,18 @@ class TestYourResourceService(TestCase):
         """This runs after each test"""
         db.session.remove()
 
+    ############################################################
+    # Utility function to bulk create products
+    ############################################################
+    def _create_products(self, count: int = 1) -> list:
+        """Factory method to create products in bulk"""
+        products = []
+        for _ in range(count):
+            test_product = ProductFactory()
+            test_product.create()
+            products.append(test_product)
+        return products
+
     ######################################################################
     #  P L A C E   T E S T   C A S E S   H E R E
     ######################################################################
@@ -81,6 +93,38 @@ class TestYourResourceService(TestCase):
         self.assertEqual(data["list_url"], "/products")
 
     # ----------------------------------------------------------
+    # PRODUCT LIST TEST
+    # ----------------------------------------------------------
+    def test_list_products(self):
+        """It should Get a list of Products"""
+        self._create_products(5)
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 5)
+
+    def test_list_products_empty(self):
+        """It should return an empty list when there are no Products"""
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.get_json(), [])
+
+    # def test_get_product(self):
+    #     """It should Get a single Product"""
+    #     test_product = ProductFactory()
+    #     test_product.create()
+    #     response = self.client.get(f"{BASE_URL}/{test_product.id}")
+    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
+    #     data = response.get_json()
+    #     self.assertEqual(data["name"], test_product.name)
+
+    # def test_get_product_not_found(self):
+    #     """It should not Get a Product that is not found"""
+    #     response = self.client.get(f"{BASE_URL}/0")
+    #     self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    #     data = response.get_json()
+    #     self.assertIn("was not found", data["message"])
+
     # TEST CREATE
     # ----------------------------------------------------------
     def test_create_product(self):
@@ -132,7 +176,6 @@ class TestYourResourceService(TestCase):
         )
         self.assertEqual(response.status_code, 415)
 
-
     # ----------------------------------------------------------
     # TEST GET
     # ----------------------------------------------------------
@@ -152,7 +195,6 @@ class TestYourResourceService(TestCase):
         data = response.get_json()
         self.assertIn("was not found", data["message"])
 
-        
     # ----------------------------------------------------------
     # TEST DELETE
     # ----------------------------------------------------------
