@@ -53,11 +53,11 @@ def delete_product(product_id):
     app.logger.info("Request to delete product with id: %s", product_id)
     product = Product.find(product_id)
 
-    if not product:
-        abort(404, description="Product not found")
+    if product:
+        app.logger.info("Product with id [%s] found, deleting it.", product_id)
+        product.delete()
 
-    product.delete()
-
+    app.logger.info("Product with id [%s] delete complete.", product_id)
     return "", status.HTTP_204_NO_CONTENT
 
 
