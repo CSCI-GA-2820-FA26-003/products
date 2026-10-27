@@ -213,10 +213,10 @@ class TestYourResourceService(TestCase):
         self.assertIsNone(Product.find(product_id))
 
     def test_delete_product_not_found(self):
-        """It should return 404 when Product does not exist"""
+        """It should return 204 when deleting a Product that does not exist"""
         resp = self.client.delete("/products/99999")
 
-        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
     # ----------------------------------------------------------
     # TEST UPDATE
