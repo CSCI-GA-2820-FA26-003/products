@@ -91,6 +91,16 @@ class TestYourResourceService(TestCase):
         self.assertEqual(data["name"], "Products Service")
         self.assertEqual(data["version"], "1.0.0")
         self.assertEqual(data["list_url"], "/products")
+    # ---------------------------------------------------------------
+    # HEALTH CHECK TEST
+    # ---------------------------------------------------------------
+    def test_health(self):
+        """It should return the health status"""
+        response = self.client.get("/health")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.get_json(), {"status": "OK"})
+        self.assertEqual(response.content_type, "application/json")
 
     # ----------------------------------------------------------
     # PRODUCT LIST TEST
