@@ -23,7 +23,7 @@ and Delete Product
 
 from flask import jsonify, request, abort, url_for
 from flask import current_app as app  # Import Flask application
-from service.models import Product, DataValidationError
+from service.models import Product
 from service.common import status  # HTTP Status Codes
 
 
@@ -94,10 +94,7 @@ def create_product():
 
     product = Product()
 
-    try:
-        product.deserialize(data)
-    except DataValidationError as error:
-        abort(400, description=str(error))
+    product.deserialize(data)
 
     product.create()
     app.logger.info("Product with id [%s] saved!", product.id)
