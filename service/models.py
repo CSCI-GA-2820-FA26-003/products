@@ -213,3 +213,16 @@ class Product(db.Model):
         """
         logger.info("Processing name query for %s ...", name)
         return cls.query.filter(cls.name == name)
+
+    @classmethod
+    def find_by_price_range(cls, min_price=None, max_price=None):
+        """Returns all Products with a price between min_price and max_price"""
+        logger.info(
+            "Processing price range query for %s to %s ...", min_price, max_price
+        )
+        query = cls.query
+        if min_price is not None:
+            query = query.filter(cls.price >= min_price)
+        if max_price is not None:
+            query = query.filter(cls.price <= max_price)
+        return query

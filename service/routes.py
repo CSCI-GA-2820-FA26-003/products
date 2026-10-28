@@ -21,6 +21,7 @@ This service implements a REST API that allows you to Create, Read, Update
 and Delete Product
 """
 
+from decimal import Decimal, InvalidOperation
 from flask import jsonify, request, abort, url_for
 from flask import current_app as app  # Import Flask application
 from service.models import Product
@@ -34,7 +35,6 @@ from service.common import status  # HTTP Status Codes
 def health():
     """Return the health status of the service"""
     return jsonify({"status": "OK"}), status.HTTP_200_OK
-
 
 
 ######################################################################
@@ -76,11 +76,29 @@ def delete_product(product_id):
 ######################################################################
 @app.route("/products", methods=["GET"])
 def list_products():
-    """Returns all of the Products"""
+    """Returns all of the Products, optionally filtered by price range"""
     app.logger.info("Request for product list")
 
-    # Return all of the Products
-    products = Product.all()
+    min_price = request.args.get("min_price")
+    max_price = request.args.get("max_price")
+
+    if min_price is not None or max_price is not None:
+        min_value = None
+        max_value = None
+        try:
+            if min_price is not None:
+                min_value = Decimal(min_price)
+            if max_price is not None:
+                max_value = Decimal(max_price)
+        except InvalidOperation:
+            abort(
+                status.HTTP_400_BAD_REQUEST,
+                "Invalid price: min_price and max_price must be numbers",
+            )
+        app.logger.info("Filtering by price range: %s to %s", min_value, max_value)
+        products = Product.find_by_price_range(min_value, max_value)
+    else:
+        products = Product.all()
 
     results = [product.serialize() for product in products]
     app.logger.info("Returning %d products", len(results))
