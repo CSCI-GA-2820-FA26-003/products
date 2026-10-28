@@ -153,7 +153,10 @@ class TestYourResourceService(TestCase):
         data = response.get_json()
         self.assertEqual(data["name"], "Test Product")
         self.assertIn("Location", response.headers)
-        self.assertEqual(response.headers["Location"], f"/products/{data['id']}")
+        self.assertEqual(
+            response.headers["Location"],
+            f"{response.request.host_url}products/{data['id']}",
+        )
 
     def test_create_product_bad_request(self):
         """Test creating a product with invalid data"""

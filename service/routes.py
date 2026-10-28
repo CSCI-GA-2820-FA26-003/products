@@ -21,7 +21,7 @@ This service implements a REST API that allows you to Create, Read, Update
 and Delete Product
 """
 
-from flask import jsonify, request, abort
+from flask import jsonify, request, abort, url_for
 from flask import current_app as app  # Import Flask application
 from service.models import Product, DataValidationError
 from service.common import status  # HTTP Status Codes
@@ -103,7 +103,9 @@ def create_product():
     app.logger.info("Product with id [%s] saved!", product.id)
 
     response = jsonify(product.serialize())
-    response.headers["Location"] = f"/products/{product.id}"
+    response.headers["Location"] = url_for(
+        "get_products", product_id=product.id, _external=True
+    )
     return response, status.HTTP_201_CREATED
 
 
