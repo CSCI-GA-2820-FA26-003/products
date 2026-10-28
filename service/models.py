@@ -45,23 +45,31 @@ class Product(db.Model):
 
     def validate(self):
         """Validates the product data."""
+        self._validate_name()
+        self._validate_optional_strings()
+        self._validate_price()
+        self._validate_stock()
+        self._validate_string_lengths()
 
+    def _validate_name(self):
+        """Validates the product name."""
         if not isinstance(self.name, str):
             raise DataValidationError(f"name must be a string, got {type(self.name)}")
 
         if not self.name.strip():
             raise DataValidationError("name cannot be empty")
 
-        if self.description is not None and not isinstance(self.description, str):
-            raise DataValidationError(
-                f"description must be a string, got {type(self.description)}"
-            )
+    def _validate_optional_strings(self):
+        """Validates optional string fields."""
+        for field in ("description", "category", "image_url"):
+            value = getattr(self, field)
+            if value is not None and not isinstance(value, str):
+                raise DataValidationError(
+                    f"{field} must be a string, got {type(value)}"
+                )
 
-        if self.category is not None and not isinstance(self.category, str):
-            raise DataValidationError(
-                f"category must be a string, got {type(self.category)}"
-            )
-
+    def _validate_price(self):
+        """Validates the product price."""
         if self.price is not None:
             try:
                 self.price = Decimal(str(self.price))
@@ -71,10 +79,10 @@ class Product(db.Model):
             if self.price < 0:
                 raise DataValidationError("price cannot be negative")
 
+    def _validate_stock(self):
+        """Validates the product stock."""
         if self.stock is not None:
-            if isinstance(self.stock, bool) or not isinstance(
-                self.stock, int
-            ):  # True is int
+            if isinstance(self.stock, bool) or not isinstance(self.stock, int):
                 raise DataValidationError(
                     f"stock must be an integer, got {type(self.stock)}"
                 )
@@ -82,12 +90,9 @@ class Product(db.Model):
             if self.stock < 0:
                 raise DataValidationError("stock cannot be negative")
 
-        if self.image_url is not None and not isinstance(self.image_url, str):
-            raise DataValidationError(
-                f"image_url must be a string, got {type(self.image_url)}"
-            )
-
-        for field in ["name", "description", "category", "image_url"]:
+    def _validate_string_lengths(self):
+        """Validates string field lengths."""
+        for field in ("name", "description", "category", "image_url"):
             value = getattr(self, field)
             if value is not None:
                 max_length = self.__table__.columns[field].type.length
