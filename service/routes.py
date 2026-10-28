@@ -25,6 +25,14 @@ from flask import jsonify, request, abort
 from flask import current_app as app  # Import Flask application
 from service.models import Product, DataValidationError
 from service.common import status  # HTTP Status Codes
+######################################################################
+# HEALTH CHECK
+######################################################################
+@app.route("/health", methods=["GET"])
+def health():
+    """Return the health status of the service"""
+    return jsonify({"status": "OK"}), status.HTTP_200_OK
+
 
 
 ######################################################################
