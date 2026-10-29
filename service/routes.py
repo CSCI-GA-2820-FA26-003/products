@@ -36,7 +36,6 @@ def health():
     return jsonify({"status": "OK"}), status.HTTP_200_OK
 
 
-
 ######################################################################
 # GET INDEX
 ######################################################################
@@ -79,8 +78,12 @@ def list_products():
     """Returns all of the Products"""
     app.logger.info("Request for product list")
 
-    # Return all of the Products
-    products = Product.all()
+    # Filter by name if provided; otherwise return all products
+    name = request.args.get("name")
+    if name is not None:
+        products = Product.find_by_name(name)
+    else:
+        products = Product.all()
 
     results = [product.serialize() for product in products]
     app.logger.info("Returning %d products", len(results))
