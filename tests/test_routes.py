@@ -132,10 +132,17 @@ class TestYourResourceService(TestCase):
         self.assertEqual(len(data), 1)
         self.assertEqual(Decimal(data[0]["price"]), Decimal("15.00"))
 
+    def test_query_by_invalid_price_range(self):
+        """It should not Query Products when min_price is greater than max_price"""
+        response = self.client.get(f"{BASE_URL}?min_price=20&max_price=10")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_query_by_invalid_price(self):
         """It should not Query Products with an invalid price"""
         response = self.client.get(f"{BASE_URL}?min_price=abc")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    # def test_get_product(self):
 
     # def test_get_product(self):
     #     """It should Get a single Product"""

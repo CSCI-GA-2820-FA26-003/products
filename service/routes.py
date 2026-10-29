@@ -95,6 +95,11 @@ def list_products():
                 status.HTTP_400_BAD_REQUEST,
                 "Invalid price: min_price and max_price must be numbers",
             )
+        if min_value is not None and max_value is not None and min_value > max_value:
+            abort(
+                status.HTTP_400_BAD_REQUEST,
+                "Invalid price range: min_price cannot be greater than max_price",
+            )
         app.logger.info("Filtering by price range: %s to %s", min_value, max_value)
         products = Product.find_by_price_range(min_value, max_value)
     else:
