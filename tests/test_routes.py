@@ -91,6 +91,7 @@ class TestYourResourceService(TestCase):
         self.assertEqual(data["name"], "Products Service")
         self.assertEqual(data["version"], "1.0.0")
         self.assertEqual(data["list_url"], "/products")
+
     # ---------------------------------------------------------------
     # HEALTH CHECK TEST
     # ---------------------------------------------------------------
@@ -116,6 +117,30 @@ class TestYourResourceService(TestCase):
     def test_list_products_empty(self):
         """It should return an empty list when there are no Products"""
         response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.get_json(), [])
+
+    def test_query_products_by_name(self):
+        """It should return only Products with the requested name"""
+        for name in ["Blue Shirt", "Red Shirt", "Blue Shirt"]:
+            product = ProductFactory(name=name)
+            product.create()
+
+        response = self.client.get(BASE_URL, query_string={"name": "Blue Shirt"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 2)
+        for product in data:
+            self.assertEqual(product["name"], "Blue Shirt")
+
+    def test_query_products_by_name_not_found(self):
+        """It should return an empty list when no name matches"""
+        product = ProductFactory(name="Red Shirt")
+        product.create()
+
+        response = self.client.get(BASE_URL, query_string={"name": "Blue Shirt"})
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.get_json(), [])
 
