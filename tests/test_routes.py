@@ -91,6 +91,7 @@ class TestYourResourceService(TestCase):
         self.assertEqual(data["name"], "Products Service")
         self.assertEqual(data["version"], "1.0.0")
         self.assertEqual(data["list_url"], "/products")
+
     # ---------------------------------------------------------------
     # HEALTH CHECK TEST
     # ---------------------------------------------------------------
@@ -118,6 +119,30 @@ class TestYourResourceService(TestCase):
         response = self.client.get(BASE_URL)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.get_json(), [])
+
+    def test_query_by_price_range(self):
+        """It should Query Products by price range"""
+        for price in ["5.00", "15.00", "25.00"]:
+            product = ProductFactory(price=Decimal(price))
+            product.create()
+
+        response = self.client.get(f"{BASE_URL}?min_price=10&max_price=20")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(Decimal(data[0]["price"]), Decimal("15.00"))
+
+    def test_query_by_invalid_price_range(self):
+        """It should not Query Products when min_price is greater than max_price"""
+        response = self.client.get(f"{BASE_URL}?min_price=20&max_price=10")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_query_by_invalid_price(self):
+        """It should not Query Products with an invalid price"""
+        response = self.client.get(f"{BASE_URL}?min_price=abc")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    # def test_get_product(self):
 
     # def test_get_product(self):
     #     """It should Get a single Product"""

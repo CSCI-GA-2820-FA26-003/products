@@ -242,6 +242,16 @@ class TestProductModel(TestCaseBase):
 
         self.assertEqual(len(Product.find_by_name("Apple Pie").all()), 5)
 
+    def test_find_by_price_range(self):
+        """It should find Products within a price range"""
+        for price in ["5.00", "15.00", "25.00"]:
+            product = ProductFactory(price=Decimal(price))
+            product.create()
+
+        found = Product.find_by_price_range(Decimal("10.00"), Decimal("20.00")).all()
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0].price, Decimal("15.00"))
+
 
 ######################################################################
 #  T E S T   A T T R I B U T E   V A L I D A T O R
