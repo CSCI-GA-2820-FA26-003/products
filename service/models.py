@@ -132,6 +132,19 @@ class Product(db.Model):
             logger.error("Error updating record: %s", self)
             raise DataValidationError(e) from e
 
+    def purchase(self):
+        """Purchase a single unit, decrementing the stock.
+
+        Raises:
+            DataValidationError: when the product is out of stock
+        """
+        logger.info("Purchasing %s", self.name)
+        if self.stock is None or self.stock <= 0:
+            raise DataValidationError("Product is out of stock")
+
+        self.stock -= 1
+        self.update()
+
     def delete(self):
         """Removes a Product from the data store"""
         logger.info("Deleting %s", self.name)

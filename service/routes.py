@@ -24,7 +24,7 @@ and Delete Product
 from decimal import Decimal, InvalidOperation
 from flask import jsonify, request, abort, url_for
 from flask import current_app as app  # Import Flask application
-from service.models import Product
+from service.models import Product, DataValidationError
 from service.common import status  # HTTP Status Codes
 
 
@@ -191,6 +191,36 @@ def update_products(product_id):
     product.update()
 
     app.logger.info("Product with ID: %d updated.", product.id)
+    return product.serialize(), status.HTTP_200_OK
+
+
+######################################################################
+# PURCHASE A PRODUCT
+######################################################################
+@app.route("/products/<int:product_id>/purchase", methods=["PUT"])
+def purchase_product(product_id):
+    """
+    Purchase a single Product
+
+    This endpoint will decrement the product's stock by one
+    """
+    app.logger.info("Request to purchase product with id [%s]", product_id)
+
+    # Attempt to find the Product and abort if not found
+    product = Product.find(product_id)
+    if not product:
+        abort(
+            status.HTTP_404_NOT_FOUND, f"Product with id '{product_id}' was not found."
+        )
+
+    try:
+        product.purchase()
+    except DataValidationError as error:
+        abort(status.HTTP_409_CONFLICT, str(error))
+
+    app.logger.info(
+        "Product with id [%s] purchased, stock is now %s", product.id, product.stock
+    )
     return product.serialize(), status.HTTP_200_OK
 
 

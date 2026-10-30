@@ -56,6 +56,7 @@ make test
 | GET | `/products/{id}` | Reads a single product | 200 OK | 404 Not Found |
 | PUT | `/products/{id}` | Updates an existing product | 200 OK | 400 Bad Request, 404 Not Found, 415 Unsupported Media Type |
 | DELETE | `/products/{id}` | Deletes a product | 204 No Content | 404 Not Found |
+| PUT | `/products/{id}/purchase` | Purchases one unit, decrementing stock by 1 | 200 OK | 404 Not Found, 409 Conflict |
 
 ### Example: Create a product
 Request:
