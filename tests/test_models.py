@@ -252,6 +252,30 @@ class TestProductModel(TestCaseBase):
         self.assertEqual(len(found), 1)
         self.assertEqual(found[0].price, Decimal("15.00"))
 
+    def test_purchase_decrements_stock(self):
+        """It should decrease stock by one when purchased"""
+        product = ProductFactory(stock=3)
+        product.create()
+
+        product.purchase()
+
+        self.assertEqual(product.stock, 2)
+        self.assertEqual(Product.find(product.id).stock, 2)
+
+    def test_purchase_out_of_stock(self):
+        """It should not purchase a product with zero stock"""
+        product = ProductFactory(stock=0)
+        product.create()
+
+        self.assertRaises(DataValidationError, product.purchase)
+
+    def test_purchase_no_stock(self):
+        """It should not purchase a product with no stock value"""
+        product = ProductFactory(stock=None)
+        product.create()
+
+        self.assertRaises(DataValidationError, product.purchase)
+
 
 ######################################################################
 #  T E S T   A T T R I B U T E   V A L I D A T O R
@@ -370,3 +394,10 @@ class TestExceptionHandlers(TestCaseBase):
         exception_mock.side_effect = Exception()
         product = ProductFactory()
         self.assertRaises(DataValidationError, product.delete)
+
+    @patch("service.models.db.session.commit")
+    def test_purchase_exception(self, exception_mock):
+        """It should catch an exception during purchase"""
+        exception_mock.side_effect = Exception()
+        product = ProductFactory(stock=5)
+        self.assertRaises(DataValidationError, product.purchase)
