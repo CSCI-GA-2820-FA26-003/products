@@ -292,6 +292,76 @@ class TestYourResourceService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     # ----------------------------------------------------------
+    # TEST RESTOCK PRODUCT
+    # ----------------------------------------------------------
+    def _create_restock_product(self, stock=5):
+        """Create a product with a known stock value."""
+        product = ProductFactory()
+        product.stock = stock
+        product.create()
+        return product
+
+    def test_restock_product_increases_and_persists_stock(self):
+        """It should add the requested quantity to the existing stock."""
+        product = self._create_restock_product(stock=5)
+
+        response = self.client.post(
+            f"{BASE_URL}/{product.id}/restock",
+            json={"quantity": 10},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.get_json()["stock"], 15)
+        self.assertEqual(Product.find(product.id).stock, 15)
+
+    def test_restock_product_not_found(self):
+        """It should return 404 when the product does not exist."""
+        response = self.client.post(
+            f"{BASE_URL}/99999/restock",
+            json={"quantity": 10},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_restock_with_non_object_json_body(self):
+        """It should return 400 when the JSON body is not an object."""
+        product = self._create_restock_product()
+
+        response = self.client.post(
+            f"{BASE_URL}/{product.id}/restock",
+            json=["quantity", 10],
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_restock_with_invalid_quantity(self):
+        """It should reject missing, non-integer, zero, and negative quantities."""
+        product = self._create_restock_product()
+        invalid_bodies = [
+            {},  # quantity missing
+            {"quantity": None},
+            {"quantity": True},
+            {"quantity": 1.5},
+            {"quantity": "10"},
+            {"quantity": 0},
+            {"quantity": -1},
+        ]
+
+        for body in invalid_bodies:
+            with self.subTest(body=body):
+                response = self.client.post(
+                    f"{BASE_URL}/{product.id}/restock",
+                    json=body,
+                )
+                self.assertEqual(
+                    response.status_code,
+                    status.HTTP_400_BAD_REQUEST,
+                )
+
+        # Invalid requests should leave the stock unchanged.
+        self.assertEqual(Product.find(product.id).stock, 5)
+
+    # ----------------------------------------------------------
     # TEST TOOLS
     # ----------------------------------------------------------
     def test_update_without_content_type(self):
