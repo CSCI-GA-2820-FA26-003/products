@@ -143,7 +143,7 @@ class TestYourResourceService(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.get_json(), [])
-        
+
     def test_query_products_by_name_and_price(self):
         """It should filter Products by both name and price"""
         for name, price in [
