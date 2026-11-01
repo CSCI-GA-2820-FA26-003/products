@@ -143,6 +143,7 @@ class TestYourResourceService(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.get_json(), [])
+
     def test_query_by_price_range(self):
         """It should Query Products by price range"""
         for price in ["5.00", "15.00", "25.00"]:
