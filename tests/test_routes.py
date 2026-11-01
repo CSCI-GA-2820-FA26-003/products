@@ -143,6 +143,29 @@ class TestYourResourceService(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.get_json(), [])
+    def test_query_by_price_range(self):
+        """It should Query Products by price range"""
+        for price in ["5.00", "15.00", "25.00"]:
+            product = ProductFactory(price=Decimal(price))
+            product.create()
+
+        response = self.client.get(f"{BASE_URL}?min_price=10&max_price=20")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(Decimal(data[0]["price"]), Decimal("15.00"))
+
+    def test_query_by_invalid_price_range(self):
+        """It should not Query Products when min_price is greater than max_price"""
+        response = self.client.get(f"{BASE_URL}?min_price=20&max_price=10")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_query_by_invalid_price(self):
+        """It should not Query Products with an invalid price"""
+        response = self.client.get(f"{BASE_URL}?min_price=abc")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    # def test_get_product(self):
 
     # def test_get_product(self):
     #     """It should Get a single Product"""
@@ -318,3 +341,43 @@ class TestYourResourceService(TestCase):
             response.status_code,
             status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
         )
+
+    def test_purchase_product(self):
+        """It should purchase a product and decrement its stock"""
+        product = ProductFactory(stock=2)
+        product.create()
+
+        response = self.client.put(f"{BASE_URL}/{product.id}/purchase")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data["stock"], 1)
+        self.assertEqual(Product.find(product.id).stock, 1)
+
+    def test_purchase_product_not_found(self):
+        """It should return 404 when purchasing a nonexistent product"""
+        response = self.client.put(f"{BASE_URL}/0/purchase")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_purchase_product_out_of_stock(self):
+        """It should return 409 when the product has zero stock"""
+        product = ProductFactory(stock=0)
+        product.create()
+
+        response = self.client.put(f"{BASE_URL}/{product.id}/purchase")
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        data = response.get_json()
+        self.assertEqual(
+            data["status"], status.HTTP_409_CONFLICT
+        )  # proves JSON, not HTML
+
+    def test_purchase_product_no_stock(self):
+        """It should return 409 when the product has no stock value"""
+        product = ProductFactory(stock=None)
+        product.create()
+
+        response = self.client.put(f"{BASE_URL}/{product.id}/purchase")
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)

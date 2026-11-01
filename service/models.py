@@ -132,6 +132,19 @@ class Product(db.Model):
             logger.error("Error updating record: %s", self)
             raise DataValidationError(e) from e
 
+    def purchase(self):
+        """Purchase a single unit, decrementing the stock.
+
+        Raises:
+            DataValidationError: when the product is out of stock
+        """
+        logger.info("Purchasing %s", self.name)
+        if self.stock is None or self.stock <= 0:
+            raise DataValidationError("Product is out of stock")
+
+        self.stock -= 1
+        self.update()
+
     def delete(self):
         """Removes a Product from the data store"""
         logger.info("Deleting %s", self.name)
@@ -213,3 +226,16 @@ class Product(db.Model):
         """
         logger.info("Processing name query for %s ...", name)
         return cls.query.filter(cls.name == name)
+
+    @classmethod
+    def find_by_price_range(cls, min_price=None, max_price=None):
+        """Returns all Products with a price between min_price and max_price"""
+        logger.info(
+            "Processing price range query for %s to %s ...", min_price, max_price
+        )
+        query = cls.query
+        if min_price is not None:
+            query = query.filter(cls.price >= min_price)
+        if max_price is not None:
+            query = query.filter(cls.price <= max_price)
+        return query

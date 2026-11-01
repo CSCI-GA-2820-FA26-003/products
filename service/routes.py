@@ -21,9 +21,10 @@ This service implements a REST API that allows you to Create, Read, Update
 and Delete Product
 """
 
+from decimal import Decimal, InvalidOperation
 from flask import jsonify, request, abort, url_for
 from flask import current_app as app  # Import Flask application
-from service.models import Product
+from service.models import Product, DataValidationError
 from service.common import status  # HTTP Status Codes
 
 
@@ -75,12 +76,42 @@ def delete_product(product_id):
 ######################################################################
 @app.route("/products", methods=["GET"])
 def list_products():
-    """Returns all of the Products"""
+    """Returns Products filtered by name and/or price range"""
     app.logger.info("Request for product list")
 
-    # Filter by name if provided; otherwise return all products
     name = request.args.get("name")
-    if name is not None:
+    min_price = request.args.get("min_price")
+    max_price = request.args.get("max_price")
+
+    # Filter by price range if provided
+    if min_price is not None or max_price is not None:
+        min_value = None
+        max_value = None
+        try:
+            if min_price is not None:
+                min_value = Decimal(min_price)
+            if max_price is not None:
+                max_value = Decimal(max_price)
+        except InvalidOperation:
+            abort(
+                status.HTTP_400_BAD_REQUEST,
+                "Invalid price: min_price and max_price must be numbers",
+            )
+
+        if (
+            min_value is not None
+            and max_value is not None
+            and min_value > max_value
+        ):
+            abort(
+                status.HTTP_400_BAD_REQUEST,
+                "Invalid price range: min_price cannot be greater than max_price",
+            )
+
+        products = Product.find_by_price_range(min_value, max_value)
+        if name is not None:
+            products = products.filter(Product.name == name)
+    elif name is not None:
         products = Product.find_by_name(name)
     else:
         products = Product.all()
@@ -171,6 +202,36 @@ def update_products(product_id):
     product.update()
 
     app.logger.info("Product with ID: %d updated.", product.id)
+    return product.serialize(), status.HTTP_200_OK
+
+
+######################################################################
+# PURCHASE A PRODUCT
+######################################################################
+@app.route("/products/<int:product_id>/purchase", methods=["PUT"])
+def purchase_product(product_id):
+    """
+    Purchase a single Product
+
+    This endpoint will decrement the product's stock by one
+    """
+    app.logger.info("Request to purchase product with id [%s]", product_id)
+
+    # Attempt to find the Product and abort if not found
+    product = Product.find(product_id)
+    if not product:
+        abort(
+            status.HTTP_404_NOT_FOUND, f"Product with id '{product_id}' was not found."
+        )
+
+    try:
+        product.purchase()
+    except DataValidationError as error:
+        abort(status.HTTP_409_CONFLICT, str(error))
+
+    app.logger.info(
+        "Product with id [%s] purchased, stock is now %s", product.id, product.stock
+    )
     return product.serialize(), status.HTTP_200_OK
 
 
