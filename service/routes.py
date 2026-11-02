@@ -76,49 +76,51 @@ def delete_product(product_id):
 ######################################################################
 @app.route("/products", methods=["GET"])
 def list_products():
-    """Returns Products filtered by name and/or price range"""
+    """Returns Products filtered by name, category, and/or price range"""
     app.logger.info("Request for product list")
 
     name = request.args.get("name")
-    min_price = request.args.get("min_price")
-    max_price = request.args.get("max_price")
+    category = request.args.get("category")
+    min_value, max_value = parse_price_range(
+        request.args.get("min_price"), request.args.get("max_price")
+    )
 
-    # Filter by price range if provided
-    if min_price is not None or max_price is not None:
-        min_value = None
-        max_value = None
-        try:
-            if min_price is not None:
-                min_value = Decimal(min_price)
-            if max_price is not None:
-                max_value = Decimal(max_price)
-        except InvalidOperation:
-            abort(
-                status.HTTP_400_BAD_REQUEST,
-                "Invalid price: min_price and max_price must be numbers",
-            )
+    query = Product.query
+    if name is not None:
+        app.logger.info("Filtering by name: %s", name)
+        query = query.filter(Product.name == name)
+    if category is not None:
+        app.logger.info("Filtering by category: %s", category)
+        query = query.filter(Product.category == category)
+    if min_value is not None:
+        query = query.filter(Product.price >= min_value)
+    if max_value is not None:
+        query = query.filter(Product.price <= max_value)
 
-        if (
-            min_value is not None
-            and max_value is not None
-            and min_value > max_value
-        ):
-            abort(
-                status.HTTP_400_BAD_REQUEST,
-                "Invalid price range: min_price cannot be greater than max_price",
-            )
-
-        products = Product.find_by_price_range(min_value, max_value)
-        if name is not None:
-            products = products.filter(Product.name == name)
-    elif name is not None:
-        products = Product.find_by_name(name)
-    else:
-        products = Product.all()
-
-    results = [product.serialize() for product in products]
+    results = [product.serialize() for product in query.all()]
     app.logger.info("Returning %d products", len(results))
     return results, status.HTTP_200_OK
+
+
+def parse_price_range(min_price, max_price):
+    """Converts the price query params to Decimals and validates them"""
+    min_value = None
+    max_value = None
+    try:
+        min_value = Decimal(min_price) if min_price is not None else None
+        max_value = Decimal(max_price) if max_price is not None else None
+    except InvalidOperation:
+        abort(
+            status.HTTP_400_BAD_REQUEST,
+            "Invalid price: min_price and max_price must be numbers",
+        )
+
+    if min_value is not None and max_value is not None and min_value > max_value:
+        abort(
+            status.HTTP_400_BAD_REQUEST,
+            "Invalid price range: min_price cannot be greater than max_price",
+        )
+    return min_value, max_value
 
 
 ######################################################################

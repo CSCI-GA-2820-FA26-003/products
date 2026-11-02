@@ -228,6 +228,12 @@ class Product(db.Model):
         return cls.query.filter(cls.name == name)
 
     @classmethod
+    def find_by_category(cls, category):
+        """Returns all Products in the given category"""
+        logger.info("Processing category query for %s ...", category)
+        return cls.query.filter(cls.category == category)
+
+    @classmethod
     def find_by_price_range(cls, min_price=None, max_price=None):
         """Returns all Products with a price between min_price and max_price"""
         logger.info(

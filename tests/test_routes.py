@@ -191,6 +191,34 @@ class TestYourResourceService(TestCase):
         response = self.client.get(f"{BASE_URL}?min_price=abc")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_query_by_category(self):
+        """It should Query Products by category"""
+        for category in ["Clothing", "Clothing", "Food"]:
+            product = ProductFactory(category=category)
+            product.create()
+
+        response = self.client.get(BASE_URL, query_string={"category": "Clothing"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 2)
+        for product in data:
+            self.assertEqual(product["category"], "Clothing")
+
+    def test_query_by_category_and_price(self):
+        """It should Query Products by category and price range together"""
+        ProductFactory(category="Clothing", price=Decimal("5.00")).create()
+        ProductFactory(category="Clothing", price=Decimal("15.00")).create()
+        ProductFactory(category="Food", price=Decimal("15.00")).create()
+
+        response = self.client.get(
+            BASE_URL,
+            query_string={"category": "Clothing", "min_price": "10", "max_price": "20"},
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["category"], "Clothing")
+
     # def test_get_product(self):
 
     # def test_get_product(self):
