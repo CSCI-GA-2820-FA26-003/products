@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: products-db
 spec:
-  clusterIP: None
+  clusterIP: "None"
   selector:
     app: products-db
   ports:
