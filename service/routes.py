@@ -76,12 +76,14 @@ def delete_product(product_id):
 ######################################################################
 @app.route("/products", methods=["GET"])
 def list_products():
-    """Returns all of the Products, optionally filtered by price range"""
+    """Returns Products filtered by name and/or price range"""
     app.logger.info("Request for product list")
 
+    name = request.args.get("name")
     min_price = request.args.get("min_price")
     max_price = request.args.get("max_price")
 
+    # Filter by price range if provided
     if min_price is not None or max_price is not None:
         min_value = None
         max_value = None
@@ -95,13 +97,22 @@ def list_products():
                 status.HTTP_400_BAD_REQUEST,
                 "Invalid price: min_price and max_price must be numbers",
             )
-        if min_value is not None and max_value is not None and min_value > max_value:
+
+        if (
+            min_value is not None
+            and max_value is not None
+            and min_value > max_value
+        ):
             abort(
                 status.HTTP_400_BAD_REQUEST,
                 "Invalid price range: min_price cannot be greater than max_price",
             )
-        app.logger.info("Filtering by price range: %s to %s", min_value, max_value)
+
         products = Product.find_by_price_range(min_value, max_value)
+        if name is not None:
+            products = products.filter(Product.name == name)
+    elif name is not None:
+        products = Product.find_by_name(name)
     else:
         products = Product.all()
 

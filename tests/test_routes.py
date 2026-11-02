@@ -120,6 +120,55 @@ class TestYourResourceService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.get_json(), [])
 
+    def test_query_products_by_name(self):
+        """It should return only Products with the requested name"""
+        for name in ["Blue Shirt", "Red Shirt", "Blue Shirt"]:
+            product = ProductFactory(name=name)
+            product.create()
+
+        response = self.client.get(BASE_URL, query_string={"name": "Blue Shirt"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 2)
+        for product in data:
+            self.assertEqual(product["name"], "Blue Shirt")
+
+    def test_query_products_by_name_not_found(self):
+        """It should return an empty list when no name matches"""
+        product = ProductFactory(name="Red Shirt")
+        product.create()
+
+        response = self.client.get(BASE_URL, query_string={"name": "Blue Shirt"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.get_json(), [])
+
+    def test_query_products_by_name_and_price(self):
+        """It should filter Products by both name and price"""
+        for name, price in [
+            ("Blue Shirt", "15.00"),
+            ("Blue Shirt", "25.00"),
+            ("Red Shirt", "15.00"),
+        ]:
+            product = ProductFactory(name=name, price=Decimal(price))
+            product.create()
+
+        response = self.client.get(
+            BASE_URL,
+            query_string={
+                "name": "Blue Shirt",
+                "min_price": "10",
+                "max_price": "20",
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["name"], "Blue Shirt")
+        self.assertEqual(Decimal(data[0]["price"]), Decimal("15.00"))
+
     def test_query_by_price_range(self):
         """It should Query Products by price range"""
         for price in ["5.00", "15.00", "25.00"]:
