@@ -252,6 +252,17 @@ class TestProductModel(TestCaseBase):
         self.assertEqual(len(found), 1)
         self.assertEqual(found[0].price, Decimal("15.00"))
 
+    def test_find_by_category(self):
+        """It should find all Products in a category"""
+        for category in ["Clothing", "Clothing", "Food"]:
+            product = ProductFactory(category=category)
+            product.create()
+
+        found = Product.find_by_category("Clothing").all()
+        self.assertEqual(len(found), 2)
+        for product in found:
+            self.assertEqual(product.category, "Clothing")
+
     def test_purchase_decrements_stock(self):
         """It should decrease stock by one when purchased"""
         product = ProductFactory(stock=3)
