@@ -204,6 +204,14 @@ class TestYourResourceService(TestCase):
         for product in data:
             self.assertEqual(product["category"], "Clothing")
 
+    def test_query_by_category_not_found(self):
+        """It should return an empty list when no Products match the category"""
+        ProductFactory(category="Clothing").create()
+
+        response = self.client.get(BASE_URL, query_string={"category": "Toys"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.get_json(), [])
+
     def test_query_by_category_and_price(self):
         """It should Query Products by category and price range together"""
         ProductFactory(category="Clothing", price=Decimal("5.00")).create()
