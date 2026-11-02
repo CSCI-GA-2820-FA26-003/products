@@ -225,6 +225,40 @@ def purchase_product(product_id):
 
 
 ######################################################################
+# RESTOCK AN EXISTING PRODUCT
+######################################################################
+@app.route("/products/<int:product_id>/restock", methods=["POST"])
+def restock_product(product_id):
+    """Increase a product's stock"""
+    app.logger.info("Request to restock product with id [%s]", product_id)
+
+    product = Product.find(product_id)
+    if not product:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            description=f"Product with id '{product_id}' was not found.",
+        )
+
+    check_content_type("application/json")
+    data = request.get_json()
+
+    if not isinstance(data, dict):
+        abort(status.HTTP_400_BAD_REQUEST, description="Invalid request body")
+
+    quantity = data.get("quantity")
+    if isinstance(quantity, bool) or not isinstance(quantity, int) or quantity <= 0:
+        abort(
+            status.HTTP_400_BAD_REQUEST,
+            description="quantity must be a positive integer",
+        )
+
+    product.stock = (product.stock or 0) + quantity
+    product.update()
+
+    return jsonify(product.serialize()), status.HTTP_200_OK
+
+
+######################################################################
 # Checks the ContentType of a request
 ######################################################################
 def check_content_type(content_type) -> None:
