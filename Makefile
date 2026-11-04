@@ -72,7 +72,10 @@ import: ## Import the image into the local K3D cluster
 deploy: ## Deploy the service on local Kubernetes
 	$(info Deploying service locally...)
 	@test -n "$$POSTGRES_PASSWORD" || (echo "Error: Set POSTGRES_PASSWORD first"; exit 1)
-	kubectl create secret generic products-db-secret --from-literal=POSTGRES_PASSWORD="$$POSTGRES_PASSWORD" --dry-run=client -o yaml | kubectl apply -f -
+	kubectl create secret generic products-db-secret \
+		--from-literal=POSTGRES_PASSWORD="$$POSTGRES_PASSWORD" \
+		--from-literal=DATABASE_URI="postgresql+psycopg://postgres:$$POSTGRES_PASSWORD@products-db:5432/products" \
+		--dry-run=client -o yaml | kubectl apply -f -
 	kubectl apply -f k8s/postgres/service.yaml -f k8s/postgres/statefulset.yaml
 	@for file in k8s/*.yaml; do \
 		[ -f "$$file" ] || continue; \
