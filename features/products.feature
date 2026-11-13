@@ -9,6 +9,6 @@ Background:
         | Blue Shirt | Cotton tee  | Clothing | 19.99 | 10    |
         | Coffee Mug | Ceramic mug | Kitchen  | 12.50 | 25    |
 
-Scenario: The service root is reachable
+Scenario: The Product Admin home page is reachable
     When I visit the "Home Page"
-    Then I should see "Products Service" on the page
+    Then I should see "Product Admin" on the page

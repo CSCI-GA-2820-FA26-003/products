@@ -84,13 +84,11 @@ class TestYourResourceService(TestCase):
     ######################################################################
 
     def test_index(self):
-        """It should call the home page"""
+        """It should return the admin home page as HTML"""
         resp = self.client.get("/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        data = resp.get_json()
-        self.assertEqual(data["name"], "Products Service")
-        self.assertEqual(data["version"], "1.0.0")
-        self.assertEqual(data["list_url"], "/products")
+        self.assertEqual(resp.mimetype, "text/html")
+        self.assertIn(b"Product Admin", resp.data)
 
     # ---------------------------------------------------------------
     # HEALTH CHECK TEST
