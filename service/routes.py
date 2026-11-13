@@ -44,14 +44,7 @@ def health():
 def index():
     """Root URL response"""
     app.logger.info("Request for Root URL")
-    return (
-        jsonify(
-            name="Products Service",
-            version="1.0.0",
-            list_url="/products",
-        ),
-        status.HTTP_200_OK,
-    )
+    return app.send_static_file("index.html")
 
 
 ######################################################################
