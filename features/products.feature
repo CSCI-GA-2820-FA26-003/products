@@ -12,3 +12,15 @@ Background:
 Scenario: The Product Admin home page is reachable
     When I visit the "Home Page"
     Then I should see "Product Admin" on the page
+
+
+Scenario: Create a Product
+    When I visit the "Home Page"
+    And I set the "Name" to "Red Hat"
+    And I set the "Description" to "Wool hat"
+    And I set the "Category" to "Clothing"
+    And I set the "Price" to "15.00"
+    And I set the "Stock" to "5"
+    And I set the "Image URL" to "https://example.com/hat.png"
+    And I press the "Create" button
+    Then I should see the message "Success"
