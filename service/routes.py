@@ -219,8 +219,9 @@ def purchase_product(product_id):
             status.HTTP_404_NOT_FOUND, f"Product with id '{product_id}' was not found."
         )
 
+    quantity = read_stock_quantity() if request.get_data() else 1
     try:
-        product.purchase()
+        product.purchase(quantity)
     except DataValidationError as error:
         abort(status.HTTP_409_CONFLICT, str(error))
 
@@ -245,9 +246,16 @@ def restock_product(product_id):
             description=f"Product with id '{product_id}' was not found.",
         )
 
+    quantity = read_stock_quantity()
+    product.stock = (product.stock or 0) + quantity
+    product.update()
+    return jsonify(product.serialize()), status.HTTP_200_OK
+
+
+def read_stock_quantity():
+    """Read and validate the requested stock quantity."""
     check_content_type("application/json")
     data = request.get_json()
-
     if not isinstance(data, dict):
         abort(status.HTTP_400_BAD_REQUEST, description="Invalid request body")
 
@@ -257,11 +265,7 @@ def restock_product(product_id):
             status.HTTP_400_BAD_REQUEST,
             description="quantity must be a positive integer",
         )
-
-    product.stock = (product.stock or 0) + quantity
-    product.update()
-
-    return jsonify(product.serialize()), status.HTTP_200_OK
+    return quantity
 
 
 ######################################################################

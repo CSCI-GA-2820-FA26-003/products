@@ -1,6 +1,6 @@
 """Selenium steps for checking the Products service in a browser."""
 
-from behave import when, then  # pylint: disable=no-name-in-module
+from behave import given, when, then  # pylint: disable=no-name-in-module
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import WebDriverWait
@@ -52,3 +52,28 @@ def step_see_message(context, message):
         )
     )
     assert found
+
+
+@given('I have created "{name}" with stock "{stock}" on the admin page')
+def step_create_product_for_stock_action(context, name, stock):
+    """Create a product through the admin form."""
+    step_visit_home_page(context)
+    for field, value in (
+        ("Name", name),
+        ("Description", "Fresh apple"),
+        ("Category", "Food"),
+        ("Price", "1.00"),
+        ("Stock", stock),
+    ):
+        step_set_field(context, field, value)
+    step_press_button(context, "Create")
+    step_see_message(context, "Success")
+
+
+@then('the "{field}" field should show "{value}"')
+def step_field_value(context, field, value):
+    """Wait for the displayed field to show the expected value."""
+    locator = (By.ID, ID_PREFIX + field.lower().replace(" ", "_"))
+    WebDriverWait(context.driver, context.wait_seconds).until(
+        lambda driver: driver.find_element(*locator).get_attribute("value") == value
+    )

@@ -65,5 +65,44 @@ $(function () {
     // ===== Action handlers are added by their User Stories =====
     // #42 Create, #43 Read, #49 Update, #50 Delete,
     // #52 List, #53 Query, #54 Action
+    function change_stock(action, method) {
+        const id = $("#product_id").val().trim();
+        const quantity = Number($("#product_quantity").val());
+        const buttons = $("#restock-btn, #buy-btn");
 
+        if (!/^[1-9]\d*$/.test(id)) {
+            flash_message("Enter a valid Product ID.");
+            return;
+        }
+        if (!Number.isSafeInteger(quantity) || quantity < 1) {
+            flash_message("Quantity must be a positive integer.");
+            return;
+        }
+
+        $("#flash_message").empty();
+        buttons.prop("disabled", true);
+
+        $.ajax({
+            type: method,
+            url: "/products/" + id + "/" + action,
+            contentType: "application/json",
+            data: JSON.stringify({ quantity: quantity })
+        }).done(function (res) {
+            update_form_data(res);
+            flash_message("Success");
+        }).fail(function (res) {
+            const message = res.responseJSON && res.responseJSON.message;
+            $("#flash_message").text(message || "Unable to update stock.");
+        }).always(function () {
+            buttons.prop("disabled", false);
+        });
+    }
+
+    $("#restock-btn").click(function () {
+        change_stock("restock", "POST");
+    });
+
+    $("#buy-btn").click(function () {
+        change_stock("purchase", "PUT");
+    });
 }); // end $(function)
