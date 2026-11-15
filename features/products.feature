@@ -24,3 +24,9 @@ Scenario: Create a Product
     And I set the "Image URL" to "https://example.com/hat.png"
     And I press the "Create" button
     Then I should see the message "Success"
+
+Scenario: List all products
+    When I visit the "Home Page"
+    And I press the "List Products" button
+    Then I should see "Blue Shirt" in the results table
+    And I should see "Coffee Mug" in the results table
