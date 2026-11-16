@@ -23,6 +23,7 @@ def step_impl(context):
         )
         expect(context.resp.status_code).equal_to(HTTP_204_NO_CONTENT)
 
+
     for row in context.table:
         payload = {
             "name": row["name"],
@@ -38,3 +39,6 @@ def step_impl(context):
             rest_endpoint, json=payload, timeout=WAIT_TIMEOUT
         )
         expect(context.resp.status_code).equal_to(HTTP_201_CREATED)
+
+        if row["name"] == "Blue Shirt":
+            context.blue_shirt_id = context.resp.json()["id"]
