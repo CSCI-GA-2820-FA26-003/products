@@ -105,4 +105,38 @@ $(function () {
     $("#buy-btn").click(function () {
         change_stock("purchase", "PUT");
     });
+    // Utility: render products into the results table
+   function populate_table(products) {
+       let tbody = $("#search_results tbody");
+       tbody.empty();
+       for (let i = 0; i < products.length; i++) {
+           let p = products[i];
+           tbody.append(
+               `<tr>
+                  <td>${p.id}</td>
+                  <td>${p.name}</td>
+                  <td>${p.description}</td>
+                  <td>${p.category}</td>
+                  <td>${p.price}</td>
+                  <td>${p.stock}</td>
+                  <td>${p.image_url}</td>
+                </tr>`
+           );
+       }
+   }
+
+   // ****************************************
+   // List all Products
+   // ****************************************
+   $("#list_products-btn").click(function () {
+       $("#flash_message").empty();
+       $.ajax({ type: "GET", url: "/products" })
+           .done(function (res) {
+               populate_table(res);
+           })
+           .fail(function (res) {
+               flash_message(res.responseJSON.message);
+           });
+   });
+   
 }); // end $(function)

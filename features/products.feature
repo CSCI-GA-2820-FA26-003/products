@@ -36,3 +36,8 @@ Scenario: Buy a product
     When I set the "Quantity" to "3"
     And I press the "Buy" button
     Then the "Stock" field should show "7"
+Scenario: List all products
+    When I visit the "Home Page"
+    And I press the "List Products" button
+    Then I should see "Blue Shirt" in the results table
+    And I should see "Coffee Mug" in the results table

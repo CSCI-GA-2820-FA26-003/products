@@ -77,3 +77,12 @@ def step_field_value(context, field, value):
     WebDriverWait(context.driver, context.wait_seconds).until(
         lambda driver: driver.find_element(*locator).get_attribute("value") == value
     )
+@then('I should see "{text_string}" in the results table')
+def step_see_in_table(context, text_string):
+    """Check that the text appears in the results table."""
+    found = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.text_to_be_present_in_element(
+            (By.ID, "search_results"), text_string
+        )
+    )
+    assert found
