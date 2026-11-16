@@ -18,3 +18,31 @@ Scenario: Retrieve a product from the Admin UI
   And I set the "Product ID" to "1"
   And I press the "Retrieve" button
   Then I should see "Blue Shirt" in the "Name" field
+
+Scenario: Create a Product
+    When I visit the "Home Page"
+    And I set the "Name" to "Red Hat"
+    And I set the "Description" to "Wool hat"
+    And I set the "Category" to "Clothing"
+    And I set the "Price" to "15.00"
+    And I set the "Stock" to "5"
+    And I set the "Image URL" to "https://example.com/hat.png"
+    And I press the "Create" button
+    Then I should see the message "Success"
+
+Scenario: Restock a product
+    Given I have created "Apple" with stock "10" on the admin page
+    When I set the "Quantity" to "5"
+    And I press the "Restock" button
+    Then the "Stock" field should show "15"
+
+Scenario: Buy a product
+    Given I have created "Apple" with stock "10" on the admin page
+    When I set the "Quantity" to "3"
+    And I press the "Buy" button
+    Then the "Stock" field should show "7"
+Scenario: List all products
+    When I visit the "Home Page"
+    And I press the "List Products" button
+    Then I should see "Blue Shirt" in the results table
+    And I should see "Coffee Mug" in the results table

@@ -1,7 +1,11 @@
 """Selenium steps for checking the Products service in a browser."""
+from behave import given, when, then  # pylint: disable=no-name-in-module
 from selenium.webdriver.support.ui import WebDriverWait
-from behave import when, then  # pylint: disable=no-name-in-module
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions
+
+
+ID_PREFIX = "product_"
 
 
 @when('I visit the "Home Page"')
@@ -39,3 +43,69 @@ def step_check_product_name(context, product_name):
             By.ID, "product_name"
         ).get_attribute("value") == product_name
     )
+
+@when('I set the "{element_name}" to "{text_string}"')
+def step_set_field(context, element_name, text_string):
+    """Type a value into a form field."""
+    element_id = ID_PREFIX + element_name.lower().replace(" ", "_")
+    element = context.driver.find_element(By.ID, element_id)
+    element.clear()
+    element.send_keys(text_string)
+    if element.get_attribute("value") != text_string:
+        # Fall back to JavaScript when send_keys does not type into the field
+        context.driver.execute_script(
+            "arguments[0].value = arguments[1];", element, text_string
+        )
+    assert element.get_attribute("value") == text_string
+
+
+@when('I press the "{button}" button')
+def step_press_button(context, button):
+    """Click a button on the page."""
+    button_id = button.lower().replace(" ", "_") + "-btn"
+    context.driver.find_element(By.ID, button_id).click()
+
+
+@then('I should see the message "{message}"')
+def step_see_message(context, message):
+    """Check that the flash message shows the expected text."""
+    found = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.text_to_be_present_in_element(
+            (By.ID, "flash_message"), message
+        )
+    )
+    assert found
+
+
+@given('I have created "{name}" with stock "{stock}" on the admin page')
+def step_create_product_for_stock_action(context, name, stock):
+    """Create a product through the admin form."""
+    step_visit_home_page(context)
+    for field, value in (
+        ("Name", name),
+        ("Description", "Fresh apple"),
+        ("Category", "Food"),
+        ("Price", "1.00"),
+        ("Stock", stock),
+    ):
+        step_set_field(context, field, value)
+    step_press_button(context, "Create")
+    step_see_message(context, "Success")
+
+
+@then('the "{field}" field should show "{value}"')
+def step_field_value(context, field, value):
+    """Wait for the displayed field to show the expected value."""
+    locator = (By.ID, ID_PREFIX + field.lower().replace(" ", "_"))
+    WebDriverWait(context.driver, context.wait_seconds).until(
+        lambda driver: driver.find_element(*locator).get_attribute("value") == value
+    )
+@then('I should see "{text_string}" in the results table')
+def step_see_in_table(context, text_string):
+    """Check that the text appears in the results table."""
+    found = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.text_to_be_present_in_element(
+            (By.ID, "search_results"), text_string
+        )
+    )
+    assert found
