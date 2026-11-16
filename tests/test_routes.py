@@ -484,6 +484,18 @@ class TestYourResourceService(TestCase):
         self.assertEqual(data["stock"], 1)
         self.assertEqual(Product.find(product.id).stock, 1)
 
+    def test_purchase_more_than_available_stock(self):
+        """It should reject a purchase that exceeds the available stock."""
+        product = ProductFactory(stock=2)
+        product.create()
+
+        response = self.client.put(
+            f"{BASE_URL}/{product.id}/purchase", json={"quantity": 3}
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(Product.find(product.id).stock, 2)
+
     def test_purchase_product_not_found(self):
         """It should return 404 when purchasing a nonexistent product"""
         response = self.client.put(f"{BASE_URL}/0/purchase")

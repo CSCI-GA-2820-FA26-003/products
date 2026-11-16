@@ -25,6 +25,17 @@ Scenario: Create a Product
     And I press the "Create" button
     Then I should see the message "Success"
 
+Scenario: Restock a product
+    Given I have created "Apple" with stock "10" on the admin page
+    When I set the "Quantity" to "5"
+    And I press the "Restock" button
+    Then the "Stock" field should show "15"
+
+Scenario: Buy a product
+    Given I have created "Apple" with stock "10" on the admin page
+    When I set the "Quantity" to "3"
+    And I press the "Buy" button
+    Then the "Stock" field should show "7"
 Scenario: List all products
     When I visit the "Home Page"
     And I press the "List Products" button
