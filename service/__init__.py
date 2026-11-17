@@ -18,10 +18,17 @@ Package for the application models and service routes
 This module creates and configures the Flask app and sets up the logging
 and SQL database
 """
+
 import sys
 from flask import Flask
+from flask_restx import Api
 from service import config
 from service.common import log_handlers
+
+api = Api(
+    title="Products Service API",
+    doc="/docs",
+)
 
 
 ############################################################
@@ -36,14 +43,17 @@ def create_app():
     # Initialize Plugins
     # pylint: disable=import-outside-toplevel
     from service.models import db
+
     db.init_app(app)
 
     with app.app_context():
         # Dependencies require we import the routes AFTER the Flask app is created
-        # pylint: disable=wrong-import-position, wrong-import-order, unused-import
+        # Routes import the API instance defined above.
+        # pylint: disable=wrong-import-position, wrong-import-order, unused-import, cyclic-import
         from service import routes, models  # noqa: F401 E402
         from service.common import error_handlers, cli_commands  # noqa: F401, E402
 
+        api.init_app(app)
         try:
             db.create_all()
         except Exception as error:  # pylint: disable=broad-except
