@@ -8,6 +8,9 @@ Background:
         | name       | description | category | price | stock |
         | Blue Shirt | Cotton tee  | Clothing | 19.99 | 10    |
         | Coffee Mug | Ceramic mug | Kitchen  | 12.50 | 25    |
+        | Apple      | Fresh apple | Fruit    | 1.25  | 30    |
+        | Apple      | Apple phone | Electronics | 999.00 | 4 |
+        | Banana     | Fresh banana | Fruit   | 0.75  | 20    |
 
 Scenario: The Product Admin home page is reachable
     When I visit the "Home Page"
@@ -46,6 +49,25 @@ Scenario: List all products
     And I press the "List Products" button
     Then I should see "Blue Shirt" in the results table
     And I should see "Coffee Mug" in the results table
+
+Scenario: Query products by name
+    When I visit the "Home Page"
+    And I set the "Name" to "Apple"
+    And I press the "Search" button
+    Then I should see only products with the name "Apple"
+
+Scenario: Query products by multiple attributes
+    When I visit the "Home Page"
+    And I set the "Name" to "Apple"
+    And I set the "Category" to "Fruit"
+    And I press the "Search" button
+    Then I should see only products matching both criteria
+
+Scenario: Query products by price
+    When I visit the "Home Page"
+    And I set the "Price" to "1.25"
+    And I press the "Search" button
+    Then I should see only products with the price "1.25"
 
 
 Scenario: Update a Product

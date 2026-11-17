@@ -19,14 +19,15 @@ TestProduct API Service Test Suite
 """
 
 # pylint: disable=duplicate-code
+from unittest import TestCase
+from unittest.mock import patch
 from decimal import Decimal
 import os
 import json
 import logging
-from unittest import TestCase
 from wsgi import app
 from service.common import status
-from service.models import db, Product
+from service.models import db, Product, DataValidationError
 from tests.factories import ProductFactory
 
 DATABASE_URI = os.getenv(
@@ -364,6 +365,31 @@ class TestYourResourceService(TestCase):
         self.assertEqual(updated_product["stock"], new_product.stock)
         self.assertEqual(updated_product["image_url"], new_product.image_url)
 
+    def test_update_product_invalid_data(self):
+        """It should reject invalid updates and preserve the JSON error format"""
+        product = self._create_products(1)[0]
+        original_name = product.name
+        payload = product.serialize()
+        payload["name"] = ""
+
+        response = self.client.put(
+            f"{BASE_URL}/{product.id}",
+            json=payload,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(response.is_json)
+        error = response.get_json()
+        self.assertEqual(error["status"], status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(error["error"], "Bad Request")
+        self.assertTrue(error["message"])
+
+        db.session.remove()
+
+        response = self.client.get(f"{BASE_URL}/{product.id}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.get_json()["name"], original_name)
+
     def test_update_bad_id(self):
         """It should not update a Product if id does not exist"""
         # create a product to update
@@ -396,6 +422,26 @@ class TestYourResourceService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.get_json()["stock"], 15)
         self.assertEqual(Product.find(product.id).stock, 15)
+
+    def test_restock_product_update_failure(self):
+        """It should preserve the JSON error format when restocking fails"""
+        product = self._create_products(1)[0]
+
+        with patch(
+            "service.routes.Product.update",
+            side_effect=DataValidationError("Unable to update product"),
+        ):
+            response = self.client.post(
+                f"{BASE_URL}/{product.id}/restock",
+                json={"quantity": 5},
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(response.is_json)
+        error = response.get_json()
+        self.assertEqual(error["status"], status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(error["error"], "Bad Request")
+        self.assertIn("Unable to update product", error["message"])
 
     def test_restock_product_not_found(self):
         """It should return 404 when the product does not exist."""
