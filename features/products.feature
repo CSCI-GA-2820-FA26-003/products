@@ -41,3 +41,13 @@ Scenario: List all products
     And I press the "List Products" button
     Then I should see "Blue Shirt" in the results table
     And I should see "Coffee Mug" in the results table
+
+
+Scenario: Update a Product
+    Given I have created "Blue Hat" with stock "5" on the admin page
+    When I set the "Name" to "Green Shirt"
+    And I press the "Update" button
+    Then I should see the message "Success"
+    And the "Name" field should show "Green Shirt"
+    When I press the "List Products" button
+    Then I should see "Green Shirt" in the results table
