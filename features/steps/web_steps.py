@@ -22,9 +22,8 @@ def step_text_is_present(context, text_string):
 
 @when('I set the "Product ID" to "{product_id}"')
 def step_set_product_id(context, product_id):
-    if product_id == "1":
-        product_id = str(context.blue_shirt_id)
-
+        product_id = str(context.product_ids[product_id])
+    
     element = context.driver.find_element(By.ID, "product_id")
     element.clear()
     element.send_keys(product_id)
