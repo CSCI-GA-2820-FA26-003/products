@@ -24,8 +24,15 @@ and Delete Product
 from decimal import Decimal, InvalidOperation
 from flask import jsonify, request, abort, url_for
 from flask import current_app as app  # Import Flask application
+from flask_restx import Namespace, Resource
+from werkzeug.exceptions import BadRequest, HTTPException, NotFound
+
 from service.models import Product, DataValidationError
 from service.common import status  # HTTP Status Codes
+from service import api
+
+products_ns = Namespace("products", description="Product operations")
+api.add_namespace(products_ns)
 
 
 ######################################################################
@@ -50,7 +57,6 @@ def index():
 ######################################################################
 #  R E S T   A P I   E N D P O I N T S
 ######################################################################
-@app.route("/products/<int:product_id>", methods=["DELETE"])
 def delete_product(product_id):
     """Delete a Product"""
     app.logger.info("Request to delete product with id: %s", product_id)
@@ -67,7 +73,6 @@ def delete_product(product_id):
 ######################################################################
 # LIST ALL PRODUCTS
 ######################################################################
-@app.route("/products", methods=["GET"])
 def list_products():
     """Returns Products filtered by name, category, and/or price range"""
     app.logger.info("Request for product list")
@@ -95,6 +100,27 @@ def list_products():
     return results, status.HTTP_200_OK
 
 
+@products_ns.route("")
+class ProductCollection(Resource):
+    """Operations on the product collection."""
+
+    def get(self):
+        """List products, with optional filters."""
+        try:
+            return list_products()
+        except BadRequest as error:
+            return app.make_response(app.handle_http_exception(error))
+
+    def post(self):
+        """Create a product."""
+        try:
+            return app.make_response(create_product())
+        except HTTPException as error:
+            return app.make_response(app.handle_http_exception(error))
+        except DataValidationError as error:
+            return app.make_response(app.handle_user_exception(error))
+
+
 def parse_price_range(min_price, max_price):
     """Converts the price query params to Decimals and validates them"""
     min_value = None
@@ -119,7 +145,6 @@ def parse_price_range(min_price, max_price):
 ######################################################################
 # CREATE A PRODUCT
 ######################################################################
-@app.route("/products", methods=["POST"])
 def create_product():
     """Create a new product"""
 
@@ -148,7 +173,6 @@ def create_product():
 ######################################################################
 # READ A PRODUCT
 ######################################################################
-@app.route("/products/<int:product_id>", methods=["GET"])
 def get_products(product_id):
     """
     Retrieve a single Product
@@ -168,10 +192,34 @@ def get_products(product_id):
     return jsonify(product.serialize()), status.HTTP_200_OK
 
 
+@products_ns.route("/<int:product_id>", endpoint="get_products")
+class ProductResource(Resource):
+    """Operations on an individual product."""
+
+    def get(self, product_id):
+        """Retrieve a product by its ID."""
+        try:
+            return app.make_response(get_products(product_id))
+        except NotFound as error:
+            return app.make_response(app.handle_http_exception(error))
+
+    def put(self, product_id):
+        """Update a product by its ID."""
+        try:
+            return app.make_response(update_products(product_id))
+        except HTTPException as error:
+            return app.make_response(app.handle_http_exception(error))
+        except DataValidationError as error:
+            return app.make_response(app.handle_user_exception(error))
+
+    def delete(self, product_id):
+        """Delete a product by its ID."""
+        return app.make_response(delete_product(product_id))
+
+
 ######################################################################
 # UPDATE AN EXISTING PRODUCT
 ######################################################################
-@app.route("/products/<int:product_id>", methods=["PUT"])
 def update_products(product_id):
     """
     Update a Product
@@ -203,7 +251,6 @@ def update_products(product_id):
 ######################################################################
 # PURCHASE A PRODUCT
 ######################################################################
-@app.route("/products/<int:product_id>/purchase", methods=["PUT"])
 def purchase_product(product_id):
     """
     Purchase a single Product
@@ -231,10 +278,21 @@ def purchase_product(product_id):
     return product.serialize(), status.HTTP_200_OK
 
 
+@products_ns.route("/<int:product_id>/purchase")
+class ProductPurchase(Resource):
+    """Purchase products and decrease stock."""
+
+    def put(self, product_id):
+        """Purchase the requested quantity."""
+        try:
+            return app.make_response(purchase_product(product_id))
+        except HTTPException as error:
+            return app.make_response(app.handle_http_exception(error))
+
+
 ######################################################################
 # RESTOCK AN EXISTING PRODUCT
 ######################################################################
-@app.route("/products/<int:product_id>/restock", methods=["POST"])
 def restock_product(product_id):
     """Increase a product's stock"""
     app.logger.info("Request to restock product with id [%s]", product_id)
@@ -250,6 +308,20 @@ def restock_product(product_id):
     product.stock = (product.stock or 0) + quantity
     product.update()
     return jsonify(product.serialize()), status.HTTP_200_OK
+
+
+@products_ns.route("/<int:product_id>/restock")
+class ProductRestock(Resource):
+    """Restock an existing product."""
+
+    def post(self, product_id):
+        """Add the requested quantity to stock."""
+        try:
+            return app.make_response(restock_product(product_id))
+        except HTTPException as error:
+            return app.make_response(app.handle_http_exception(error))
+        except DataValidationError as error:
+            return app.make_response(app.handle_user_exception(error))
 
 
 def read_stock_quantity():
