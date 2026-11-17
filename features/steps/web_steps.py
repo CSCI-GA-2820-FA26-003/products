@@ -34,6 +34,9 @@ def step_set_field(context, element_name, text_string):
             "arguments[0].value = arguments[1];", element, text_string
         )
     assert element.get_attribute("value") == text_string
+    field = element_name.lower().replace(" ", "_")
+    if field in ("name", "category", "price"):
+        setattr(context, f"query_{field}", text_string)
 
 
 @when('I press the "{button}" button')
@@ -41,6 +44,44 @@ def step_press_button(context, button):
     """Click a button on the page."""
     button_id = button.lower().replace(" ", "_") + "-btn"
     context.driver.find_element(By.ID, button_id).click()
+
+
+def wait_for_result_rows(context):
+    """Wait for product rows to appear in the results table."""
+    return WebDriverWait(context.driver, context.wait_seconds).until(
+        lambda driver: driver.find_elements(By.CSS_SELECTOR, "#search_results tbody tr")
+    )
+
+
+@then('I should see only products with the name "{name}"')
+def step_only_name_matches(context, name):
+    """Assert every search result has the requested product name."""
+    rows = wait_for_result_rows(context)
+    assert rows
+    for row in rows:
+        cells = row.find_elements(By.TAG_NAME, "td")
+        assert cells[1].text == name
+
+
+@then("I should see only products matching both criteria")
+def step_only_name_and_category_match(context):
+    """Assert every result matches both entered search fields."""
+    rows = wait_for_result_rows(context)
+    assert rows
+    for row in rows:
+        cells = row.find_elements(By.TAG_NAME, "td")
+        assert cells[1].text == context.query_name
+        assert cells[3].text == context.query_category
+
+
+@then('I should see only products with the price "{price}"')
+def step_only_price_matches(context, price):
+    """Assert every search result has the requested exact price."""
+    rows = wait_for_result_rows(context)
+    assert rows
+    for row in rows:
+        cells = row.find_elements(By.TAG_NAME, "td")
+        assert cells[4].text == price
 
 
 @then('I should see the message "{message}"')
@@ -77,6 +118,8 @@ def step_field_value(context, field, value):
     WebDriverWait(context.driver, context.wait_seconds).until(
         lambda driver: driver.find_element(*locator).get_attribute("value") == value
     )
+
+
 @then('I should see "{text_string}" in the results table')
 def step_see_in_table(context, text_string):
     """Check that the text appears in the results table."""

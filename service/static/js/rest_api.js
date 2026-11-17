@@ -168,6 +168,38 @@ $(function () {
     }
 
     // ****************************************
+    // Search Products
+    // ****************************************
+    $("#search-btn").click(function () {
+        const query = {};
+        const name = $("#product_name").val().trim();
+        const category = $("#product_category").val().trim();
+        const price = $("#product_price").val().trim();
+
+        if (name) {
+            query.name = name;
+        }
+        if (category) {
+            query.category = category;
+        }
+        if (price) {
+            query.min_price = price;
+            query.max_price = price;
+        }
+
+        $("#flash_message").empty();
+        $.ajax({ type: "GET", url: "/products", data: query })
+            .done(function (res) {
+                populate_table(res);
+                flash_message("Success");
+            })
+            .fail(function (res) {
+                const message = res.responseJSON && res.responseJSON.message;
+                flash_message(message || "Unable to search products.");
+            });
+    });
+
+    // ****************************************
     // List all Products
     // ****************************************
     $("#list_products-btn").click(function () {
