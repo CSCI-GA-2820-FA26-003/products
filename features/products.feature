@@ -15,7 +15,7 @@ Scenario: The Product Admin home page is reachable
 
 Scenario: Retrieve a product from the Admin UI
   When I visit the "Home Page"
-  And I set the "Product ID" to "1"
+  And I set the "Product ID" to "Blue Shirt"
   And I press the "Retrieve" button
   Then I should see "Blue Shirt" in the "Name" field
 
