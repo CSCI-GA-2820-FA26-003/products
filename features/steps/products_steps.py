@@ -23,6 +23,7 @@ def step_impl(context):
         )
         expect(context.resp.status_code).equal_to(HTTP_204_NO_CONTENT)
 
+
     for row in context.table:
         payload = {
             "name": row["name"],
@@ -38,3 +39,8 @@ def step_impl(context):
             rest_endpoint, json=payload, timeout=WAIT_TIMEOUT
         )
         expect(context.resp.status_code).equal_to(HTTP_201_CREATED)
+
+        if not hasattr(context, "product_ids"):
+            context.product_ids = {}
+
+        context.product_ids[row["name"]] = context.resp.json()["id"]
