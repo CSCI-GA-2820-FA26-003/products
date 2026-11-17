@@ -62,6 +62,48 @@ $(function () {
         });
     });
 
+    // ****************************************
+    // Update a Product
+    // ****************************************
+
+    $("#update-btn").click(function () {
+
+        let product_id = $("#product_id").val().trim();
+        let stock = $("#product_stock").val();
+
+        if (product_id === "") {
+            flash_message("Enter a Product ID to update.");
+            return;
+        }
+
+        let data = {
+            "name": $("#product_name").val(),
+            "description": $("#product_description").val(),
+            "category": $("#product_category").val(),
+            "price": $("#product_price").val(),
+            "stock": stock === "" ? null : parseInt(stock, 10),
+            "image_url": $("#product_image_url").val()
+        };
+
+        $("#flash_message").empty();
+
+        let ajax = $.ajax({
+            type: "PUT",
+            url: "/products/" + product_id,
+            contentType: "application/json",
+            data: JSON.stringify(data)
+        });
+
+        ajax.done(function (res) {
+            update_form_data(res);
+            flash_message("Success");
+        });
+
+        ajax.fail(function (res) {
+            flash_message(res.responseJSON.message);
+        });
+    });
+
     // ===== Action handlers are added by their User Stories =====
     // #42 Create, #43 Read, #49 Update, #50 Delete,
     // #52 List, #53 Query, #54 Action
@@ -106,13 +148,13 @@ $(function () {
         change_stock("purchase", "PUT");
     });
     // Utility: render products into the results table
-   function populate_table(products) {
-       let tbody = $("#search_results tbody");
-       tbody.empty();
-       for (let i = 0; i < products.length; i++) {
-           let p = products[i];
-           tbody.append(
-               `<tr>
+    function populate_table(products) {
+        let tbody = $("#search_results tbody");
+        tbody.empty();
+        for (let i = 0; i < products.length; i++) {
+            let p = products[i];
+            tbody.append(
+                `<tr>
                   <td>${p.id}</td>
                   <td>${p.name}</td>
                   <td>${p.description}</td>
