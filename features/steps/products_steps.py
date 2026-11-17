@@ -40,5 +40,7 @@ def step_impl(context):
         )
         expect(context.resp.status_code).equal_to(HTTP_201_CREATED)
 
-        if row["name"] == "Blue Shirt":
-            context.blue_shirt_id = context.resp.json()["id"]
+        if not hasattr(context, "product_ids"):
+            context.product_ids = {}
+
+        context.product_ids[row["name"]] = context.resp.json()["id"]
