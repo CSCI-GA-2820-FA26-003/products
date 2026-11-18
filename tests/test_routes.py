@@ -33,7 +33,7 @@ from tests.factories import ProductFactory
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
 )
-BASE_URL = "/products"
+BASE_URL = "/api/products"
 
 
 ######################################################################
@@ -90,6 +90,15 @@ class TestYourResourceService(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.mimetype, "text/html")
         self.assertIn(b"Product Admin", resp.data)
+
+    def test_api_prefix(self):
+        """It should serve products under /api and not at the old /products path"""
+        ProductFactory().create()
+        response = self.client.get("/api/products")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.get_json()), 1)
+        response = self.client.get("/products")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     # ---------------------------------------------------------------
     # HEALTH CHECK TEST
@@ -260,7 +269,7 @@ class TestYourResourceService(TestCase):
         self.assertEqual(Product.query.count(), 0)
 
         # Create a product
-        response = self.client.post("/products", json=product_data)
+        response = self.client.post(BASE_URL, json=product_data)
 
         # Check the response
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -274,23 +283,23 @@ class TestYourResourceService(TestCase):
         self.assertIn("Location", response.headers)
         self.assertEqual(
             response.headers["Location"],
-            f"{response.request.host_url}products/{data['id']}",
+            f"{response.request.host_url}api/products/{data['id']}",
         )
 
     def test_create_product_bad_request(self):
         """Test creating a product with invalid data"""
-        response = self.client.post("/products", json=["invalid", "data"])
+        response = self.client.post(BASE_URL, json=["invalid", "data"])
         self.assertEqual(response.status_code, 400)
 
     def test_create_product_invalid_fields(self):
         """Test creating a product with missing fields"""
-        response = self.client.post("/products", json={"description": "Test Product"})
+        response = self.client.post(BASE_URL, json={"description": "Test Product"})
         self.assertEqual(response.status_code, 400)
 
     def test_create_product_invalid_content_type(self):
         """Test creating a product without JSON"""
         response = self.client.post(
-            "/products", data="not json", content_type="text/plain"
+            BASE_URL, data="not json", content_type="text/plain"
         )
         self.assertEqual(response.status_code, 415)
 
@@ -329,14 +338,14 @@ class TestYourResourceService(TestCase):
         product.create()
         product_id = product.id
 
-        resp = self.client.delete(f"/products/{product_id}")
+        resp = self.client.delete(f"{BASE_URL}/{product_id}")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
         self.assertIsNone(Product.find(product_id))
 
     def test_delete_product_not_found(self):
         """It should return 204 when deleting a Product that does not exist"""
-        resp = self.client.delete("/products/99999")
+        resp = self.client.delete(f"{BASE_URL}/99999")
 
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
