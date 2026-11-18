@@ -27,7 +27,7 @@ from service.common import log_handlers
 
 api = Api(
     title="Products Service API",
-    doc="/docs",
+    doc="/apidocs/",
     prefix="/api",
 )
 
@@ -55,6 +55,7 @@ def create_app():
         from service.common import error_handlers, cli_commands  # noqa: F401, E402
 
         api.init_app(app)
+        error_handlers.register_error_handlers(app, api)
         try:
             db.create_all()
         except Exception as error:  # pylint: disable=broad-except

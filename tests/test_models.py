@@ -336,6 +336,15 @@ class TestValidator(TestCaseBase):
 
         self.assertRaises(DataValidationError, product.validate)
 
+    def test_validate_non_finite_price(self):
+        """It should reject prices that are NaN or infinite."""
+        for price in ("NaN", "Infinity"):
+            with self.subTest(price=price):
+                product = ProductFactory()
+                product.price = price
+                with self.assertRaisesRegex(DataValidationError, "finite"):
+                    product.validate()
+
     def test_validate_price_conversion(self):
         """It should convert a valid price to Decimal"""
         product = ProductFactory()

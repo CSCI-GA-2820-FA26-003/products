@@ -21,11 +21,10 @@ This service implements a REST API that allows you to Create, Read, Update
 and Delete Product
 """
 
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, DecimalException
 from flask import jsonify, request, abort, url_for
 from flask import current_app as app  # Import Flask application
 from flask_restx import Namespace, Resource, fields
-from werkzeug.exceptions import BadRequest, HTTPException, NotFound
 
 from service.models import Product, DataValidationError
 from service.common import status  # HTTP Status Codes
@@ -33,6 +32,14 @@ from service import api
 
 products_ns = Namespace("products", description="Product operations")
 api.add_namespace(products_ns)
+error_model = products_ns.model(
+    "Error",
+    {
+        "status": fields.Integer(description="HTTP status code", example=400),
+        "error": fields.String(description="HTTP error name", example="Bad Request"),
+        "message": fields.String(description="Details about the error"),
+    },
+)
 product_input = products_ns.model(
     "ProductInput",
     {
@@ -134,26 +141,20 @@ class ProductCollection(Resource):
     @products_ns.param("min_price", "Minimum price (inclusive)", _in="query")
     @products_ns.param("max_price", "Maximum price (inclusive)", _in="query")
     @products_ns.response(200, "List of matching products")
-    @products_ns.response(400, "Invalid price filter or price range")
+    @products_ns.response(400, "Invalid price filter or price range", error_model)
+    @products_ns.response(405, "Method not allowed", error_model)
     def get(self):
         """List products, with optional filters."""
-        try:
-            return list_products()
-        except BadRequest as error:
-            return app.make_response(app.handle_http_exception(error))
+        return list_products()
 
     @products_ns.expect(product_input, validate=False)
     @products_ns.response(201, "Product created")
-    @products_ns.response(400, "Invalid product data")
-    @products_ns.response(415, "Content-Type must be application/json")
+    @products_ns.response(400, "Invalid product data", error_model)
+    @products_ns.response(405, "Method not allowed", error_model)
+    @products_ns.response(415, "Content-Type must be application/json", error_model)
     def post(self):
         """Create a product."""
-        try:
-            return app.make_response(create_product())
-        except HTTPException as error:
-            return app.make_response(app.handle_http_exception(error))
-        except DataValidationError as error:
-            return app.make_response(app.handle_user_exception(error))
+        return create_product()
 
 
 def parse_price_range(min_price, max_price):
@@ -163,10 +164,18 @@ def parse_price_range(min_price, max_price):
     try:
         min_value = Decimal(min_price) if min_price is not None else None
         max_value = Decimal(max_price) if max_price is not None else None
-    except InvalidOperation:
+    except (DecimalException, TypeError, ValueError):
         abort(
             status.HTTP_400_BAD_REQUEST,
             "Invalid price: min_price and max_price must be numbers",
+        )
+
+    if (min_value is not None and not min_value.is_finite()) or (
+        max_value is not None and not max_value.is_finite()
+    ):
+        abort(
+            status.HTTP_400_BAD_REQUEST,
+            "Invalid price: min_price and max_price must be finite numbers",
         )
 
     if min_value is not None and max_value is not None and min_value > max_value:
@@ -198,11 +207,8 @@ def create_product():
     product.create()
     app.logger.info("Product with id [%s] saved!", product.id)
 
-    response = jsonify(product.serialize())
-    response.headers["Location"] = url_for(
-        "get_products", product_id=product.id, _external=True
-    )
-    return response, status.HTTP_201_CREATED
+    location = url_for("get_products", product_id=product.id, _external=True)
+    return product.serialize(), status.HTTP_201_CREATED, {"Location": location}
 
 
 ######################################################################
@@ -224,7 +230,7 @@ def get_products(product_id):
         )
 
     app.logger.info("Returning product: %s", product.name)
-    return jsonify(product.serialize()), status.HTTP_200_OK
+    return product.serialize(), status.HTTP_200_OK
 
 
 @products_ns.route("/<int:product_id>", endpoint="get_products")
@@ -233,33 +239,28 @@ class ProductResource(Resource):
 
     @products_ns.param("product_id", "ID of the product to retrieve", _in="path")
     @products_ns.response(200, "Product found")
-    @products_ns.response(404, "Product not found")
+    @products_ns.response(404, "Product not found", error_model)
+    @products_ns.response(405, "Method not allowed", error_model)
     def get(self, product_id):
         """Retrieve a product by its ID."""
-        try:
-            return app.make_response(get_products(product_id))
-        except NotFound as error:
-            return app.make_response(app.handle_http_exception(error))
+        return get_products(product_id)
 
     @products_ns.param("product_id", "ID of the product to update", _in="path")
     @products_ns.expect(product_input, validate=False)
     @products_ns.response(200, "Product updated")
-    @products_ns.response(400, "Invalid product data")
-    @products_ns.response(404, "Product not found")
-    @products_ns.response(415, "Content-Type must be application/json")
+    @products_ns.response(400, "Invalid product data", error_model)
+    @products_ns.response(404, "Product not found", error_model)
+    @products_ns.response(405, "Method not allowed", error_model)
+    @products_ns.response(415, "Content-Type must be application/json", error_model)
     def put(self, product_id):
         """Update a product by its ID.
         Omitted optional fields are cleared.
         """
-        try:
-            return app.make_response(update_products(product_id))
-        except HTTPException as error:
-            return app.make_response(app.handle_http_exception(error))
-        except DataValidationError as error:
-            return app.make_response(app.handle_user_exception(error))
+        return update_products(product_id)
 
     @products_ns.param("product_id", "ID of the product to delete", _in="path")
     @products_ns.response(204, "Product deleted or already absent")
+    @products_ns.response(405, "Method not allowed", error_model)
     def delete(self, product_id):
         """Delete a product by its ID."""
         return app.make_response(delete_product(product_id))
@@ -339,18 +340,18 @@ class ProductPurchase(Resource):
         required=False,
     )
     @products_ns.response(200, "Product purchased")
-    @products_ns.response(400, "Invalid quantity or JSON body")
-    @products_ns.response(404, "Product not found")
-    @products_ns.response(409, "Insufficient stock")
+    @products_ns.response(400, "Invalid quantity or JSON body", error_model)
+    @products_ns.response(404, "Product not found", error_model)
+    @products_ns.response(405, "Method not allowed", error_model)
+    @products_ns.response(409, "Insufficient stock", error_model)
     @products_ns.response(
-        415, "Content-Type must be application/json when a body is sent"
+        415,
+        "Content-Type must be application/json when a body is sent",
+        error_model,
     )
     def put(self, product_id):
         """Purchase the requested quantity."""
-        try:
-            return app.make_response(purchase_product(product_id))
-        except HTTPException as error:
-            return app.make_response(app.handle_http_exception(error))
+        return purchase_product(product_id)
 
 
 ######################################################################
@@ -370,7 +371,7 @@ def restock_product(product_id):
     quantity = read_stock_quantity()
     product.stock = (product.stock or 0) + quantity
     product.update()
-    return jsonify(product.serialize()), status.HTTP_200_OK
+    return product.serialize(), status.HTTP_200_OK
 
 
 @products_ns.route("/<int:product_id>/restock")
@@ -380,17 +381,17 @@ class ProductRestock(Resource):
     @products_ns.param("product_id", "ID of the product to restock", _in="path")
     @products_ns.expect(stock_quantity_input, validate=False)
     @products_ns.response(200, "Product restocked")
-    @products_ns.response(400, "Invalid quantity, invalid JSON body, or update failed")
-    @products_ns.response(404, "Product not found")
-    @products_ns.response(415, "Content-Type must be application/json")
+    @products_ns.response(
+        400,
+        "Invalid quantity, invalid JSON body, or update failed",
+        error_model,
+    )
+    @products_ns.response(404, "Product not found", error_model)
+    @products_ns.response(405, "Method not allowed", error_model)
+    @products_ns.response(415, "Content-Type must be application/json", error_model)
     def post(self, product_id):
         """Add the requested quantity to stock."""
-        try:
-            return app.make_response(restock_product(product_id))
-        except HTTPException as error:
-            return app.make_response(app.handle_http_exception(error))
-        except DataValidationError as error:
-            return app.make_response(app.handle_user_exception(error))
+        return restock_product(product_id)
 
 
 def read_stock_quantity():
