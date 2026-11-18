@@ -47,7 +47,7 @@ $(function () {
 
         let ajax = $.ajax({
             type: "POST",
-            url: "/products",
+            url: "/api/products",
             contentType: "application/json",
             data: JSON.stringify(data)
         });
@@ -89,7 +89,7 @@ $(function () {
 
         let ajax = $.ajax({
             type: "PUT",
-            url: "/products/" + product_id,
+            url: "/api/products/" + product_id,
             contentType: "application/json",
             data: JSON.stringify(data)
         });
@@ -126,7 +126,7 @@ $(function () {
 
         $.ajax({
             type: method,
-            url: "/products/" + id + "/" + action,
+            url: "/api/products/" + id + "/" + action,
             contentType: "application/json",
             data: JSON.stringify({ quantity: quantity })
         }).done(function (res) {
@@ -188,7 +188,7 @@ $(function () {
         }
 
         $("#flash_message").empty();
-        $.ajax({ type: "GET", url: "/products", data: query })
+        $.ajax({ type: "GET", url: "/api/products", data: query })
             .done(function (res) {
                 populate_table(res);
                 flash_message("Success");
@@ -204,7 +204,7 @@ $(function () {
     // ****************************************
     $("#list_products-btn").click(function () {
         $("#flash_message").empty();
-        $.ajax({ type: "GET", url: "/products" })
+        $.ajax({ type: "GET", url: "/api/products" })
             .done(function (res) {
                 populate_table(res);
             })

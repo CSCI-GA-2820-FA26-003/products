@@ -13,7 +13,7 @@ WAIT_TIMEOUT = 60
 @given("the following products")
 def step_impl(context):
     """Clear the product catalog and seed it with the feature table."""
-    rest_endpoint = f"{context.base_url}/products"
+    rest_endpoint = f"{context.base_url}/api/products"
     context.resp = requests.get(rest_endpoint, timeout=WAIT_TIMEOUT)
     expect(context.resp.status_code).equal_to(HTTP_200_OK)
 
@@ -34,7 +34,5 @@ def step_impl(context):
         if "image_url" in context.table.headings:
             payload["image_url"] = row["image_url"]
 
-        context.resp = requests.post(
-            rest_endpoint, json=payload, timeout=WAIT_TIMEOUT
-        )
+        context.resp = requests.post(rest_endpoint, json=payload, timeout=WAIT_TIMEOUT)
         expect(context.resp.status_code).equal_to(HTTP_201_CREATED)
