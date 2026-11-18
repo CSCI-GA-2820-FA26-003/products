@@ -47,7 +47,7 @@ $(function () {
 
         let ajax = $.ajax({
             type: "POST",
-            url: "/products",
+            url: "/api/products",
             contentType: "application/json",
             data: JSON.stringify(data)
         });
@@ -89,7 +89,7 @@ $(function () {
 
         let ajax = $.ajax({
             type: "PUT",
-            url: "/products/" + product_id,
+            url: "/api/products/" + product_id,
             contentType: "application/json",
             data: JSON.stringify(data)
         });
@@ -126,7 +126,7 @@ $(function () {
 
         $.ajax({
             type: method,
-            url: "/products/" + id + "/" + action,
+            url: "/api/products/" + id + "/" + action,
             contentType: "application/json",
             data: JSON.stringify({ quantity: quantity })
         }).done(function (res) {
@@ -163,40 +163,40 @@ $(function () {
                   <td>${p.stock}</td>
                   <td>${p.image_url}</td>
                 </tr>`
-           );
-       }
-   }
-
-// Story #43: Retrieve a product by ID
-$("#retrieve-btn").click(function (event) {
-    event.preventDefault();
-
-    let product_id = $("#product_id").val();
-
-    if (!product_id) {
-        flash_message("Please enter a Product ID");
-        return;
+            );
+        }
     }
 
-    $.ajax({
-        type: "GET",
-        url: "/products/" + product_id,
-        success: function (res) {
-            update_form_data(res);
-            flash_message("Product retrieved successfully");
-        },
-        error: function (xhr) {
-            clear_form_data();
+    // Story #43: Retrieve a product by ID
+    $("#retrieve-btn").click(function (event) {
+        event.preventDefault();
 
-            if (xhr.status === 404) {
-                flash_message("Product not found");
-            } else {
-                flash_message("Error retrieving product");
-            }
+        let product_id = $("#product_id").val();
+
+        if (!product_id) {
+            flash_message("Please enter a Product ID");
+            return;
         }
+
+        $.ajax({
+            type: "GET",
+            url: "/api/products/" + product_id,
+            success: function (res) {
+                update_form_data(res);
+                flash_message("Product retrieved successfully");
+            },
+            error: function (xhr) {
+                clear_form_data();
+
+                if (xhr.status === 404) {
+                    flash_message("Product not found");
+                } else {
+                    flash_message("Error retrieving product");
+                }
+            }
         });
-    }); 
-      
+    });
+
     // ****************************************
     // Search Products
     // ****************************************
@@ -218,7 +218,7 @@ $("#retrieve-btn").click(function (event) {
         }
 
         $("#flash_message").empty();
-        $.ajax({ type: "GET", url: "/products", data: query })
+        $.ajax({ type: "GET", url: "/api/products", data: query })
             .done(function (res) {
                 populate_table(res);
                 flash_message("Success");
@@ -234,7 +234,7 @@ $("#retrieve-btn").click(function (event) {
     // ****************************************
     $("#list_products-btn").click(function () {
         $("#flash_message").empty();
-        $.ajax({ type: "GET", url: "/products" })
+        $.ajax({ type: "GET", url: "/api/products" })
             .done(function (res) {
                 populate_table(res);
             })
@@ -244,4 +244,4 @@ $("#retrieve-btn").click(function (event) {
     });
 
 
-    }); // end $(function)
+}); // end $(function)

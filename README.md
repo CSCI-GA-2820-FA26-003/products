@@ -45,6 +45,51 @@ Run the unit tests with coverage (minimum 95%):
 make test
 ```
 
+## Running the Admin UI and BDD Tests
+
+### Start the Admin UI
+
+1. Open the project in VS Code and select **Reopen in Container**.
+2. Wait for the DevContainer to finish setting up.
+3. Create the database tables if needed:
+
+   ```bash
+   flask db-create
+   ```
+
+4. Start the service:
+
+   ```bash
+   honcho start
+   ```
+
+5. Open http://localhost:8080 in your browser.
+
+### Run the BDD Tests
+
+The BDD tests are in the `features/` directory. They use Behave and Selenium.
+
+Keep the service running and open another terminal in the DevContainer.
+
+Run:
+
+```bash
+behave
+```
+
+Chrome and a compatible browser driver must be available. The command should be verified in the DevContainer.
+
+### Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `BASE_URL` | `http://localhost:8080` | Application URL |
+| `DRIVER` | `chrome` | Browser for testing |
+| `WAIT_SECONDS` | `30` | Selenium wait time in seconds |
+
+The dependencies are listed in `Pipfile`. The project uses Selenium version `4.16.0`.
+
+
 ## API Endpoints
 
 | Method | URL | Description | Success Code | Error Codes |

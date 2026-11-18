@@ -27,7 +27,8 @@ from service.common import log_handlers
 
 api = Api(
     title="Products Service API",
-    doc="/apidocs/",
+    doc="/docs",
+    prefix="/api",
 )
 
 
