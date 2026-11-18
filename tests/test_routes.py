@@ -100,6 +100,15 @@ class TestYourResourceService(TestCase):
         response = self.client.get("/products")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_swagger_product_model(self):
+        """It should document the Product response model in Swagger"""
+        response = self.client.get("/api/swagger.json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        definitions = response.get_json()["definitions"]
+        self.assertIn("Product", definitions)
+        for field in ("id", "name", "price", "stock", "created_at"):
+            self.assertIn(field, definitions["Product"]["properties"])
+
     # ---------------------------------------------------------------
     # HEALTH CHECK TEST
     # ---------------------------------------------------------------

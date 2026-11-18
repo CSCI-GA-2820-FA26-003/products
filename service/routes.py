@@ -53,6 +53,20 @@ product_input = products_ns.model(
         "image_url": fields.String(description="Product image URL"),
     },
 )
+product_model = products_ns.model(
+    "Product",
+    {
+        "id": fields.Integer(readonly=True, description="Unique product ID"),
+        "name": fields.String(description="Product name", example="Blue Shirt"),
+        "description": fields.String(description="Product description"),
+        "category": fields.String(description="Product category"),
+        "price": fields.String(description="Product price", example="19.99"),
+        "stock": fields.Integer(description="Stock quantity", example=10),
+        "image_url": fields.String(description="Product image URL"),
+        "created_at": fields.DateTime(readonly=True, description="Creation time"),
+        "updated_at": fields.DateTime(readonly=True, description="Last update time"),
+    },
+)
 
 stock_quantity_input = products_ns.model(
     "StockQuantityInput",
@@ -140,7 +154,7 @@ class ProductCollection(Resource):
     @products_ns.param("category", "Exact product category", _in="query")
     @products_ns.param("min_price", "Minimum price (inclusive)", _in="query")
     @products_ns.param("max_price", "Maximum price (inclusive)", _in="query")
-    @products_ns.response(200, "List of matching products")
+    @products_ns.response(200, "List of matching products", [product_model])
     @products_ns.response(400, "Invalid price filter or price range", error_model)
     @products_ns.response(405, "Method not allowed", error_model)
     def get(self):
@@ -148,7 +162,7 @@ class ProductCollection(Resource):
         return list_products()
 
     @products_ns.expect(product_input, validate=False)
-    @products_ns.response(201, "Product created")
+    @products_ns.response(201, "Product created", product_model)
     @products_ns.response(400, "Invalid product data", error_model)
     @products_ns.response(405, "Method not allowed", error_model)
     @products_ns.response(415, "Content-Type must be application/json", error_model)
@@ -238,7 +252,7 @@ class ProductResource(Resource):
     """Operations on an individual product."""
 
     @products_ns.param("product_id", "ID of the product to retrieve", _in="path")
-    @products_ns.response(200, "Product found")
+    @products_ns.response(200, "Product found", product_model)
     @products_ns.response(404, "Product not found", error_model)
     @products_ns.response(405, "Method not allowed", error_model)
     def get(self, product_id):
@@ -247,7 +261,7 @@ class ProductResource(Resource):
 
     @products_ns.param("product_id", "ID of the product to update", _in="path")
     @products_ns.expect(product_input, validate=False)
-    @products_ns.response(200, "Product updated")
+    @products_ns.response(200, "Product updated", product_model)
     @products_ns.response(400, "Invalid product data", error_model)
     @products_ns.response(404, "Product not found", error_model)
     @products_ns.response(405, "Method not allowed", error_model)
@@ -339,7 +353,7 @@ class ProductPurchase(Resource):
         _in="body",
         required=False,
     )
-    @products_ns.response(200, "Product purchased")
+    @products_ns.response(200, "Product purchased", product_model)
     @products_ns.response(400, "Invalid quantity or JSON body", error_model)
     @products_ns.response(404, "Product not found", error_model)
     @products_ns.response(405, "Method not allowed", error_model)
@@ -380,7 +394,7 @@ class ProductRestock(Resource):
 
     @products_ns.param("product_id", "ID of the product to restock", _in="path")
     @products_ns.expect(stock_quantity_input, validate=False)
-    @products_ns.response(200, "Product restocked")
+    @products_ns.response(200, "Product restocked", product_model)
     @products_ns.response(
         400,
         "Invalid quantity, invalid JSON body, or update failed",
