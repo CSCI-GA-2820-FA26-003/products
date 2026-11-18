@@ -24,7 +24,7 @@ and Delete Product
 from decimal import Decimal, InvalidOperation
 from flask import jsonify, request, abort, url_for
 from flask import current_app as app  # Import Flask application
-from flask_restx import Namespace, Resource
+from flask_restx import Namespace, Resource, fields
 from werkzeug.exceptions import BadRequest, HTTPException, NotFound
 
 from service.models import Product, DataValidationError
@@ -33,6 +33,31 @@ from service import api
 
 products_ns = Namespace("products", description="Product operations")
 api.add_namespace(products_ns)
+product_input = products_ns.model(
+    "ProductInput",
+    {
+        "name": fields.String(
+            required=True, description="Product name", example="Blue Shirt"
+        ),
+        "description": fields.String(description="Product description"),
+        "category": fields.String(description="Product category"),
+        "price": fields.Float(description="Product price", example=19.99),
+        "stock": fields.Integer(description="Stock quantity", example=10),
+        "image_url": fields.String(description="Product image URL"),
+    },
+)
+
+stock_quantity_input = products_ns.model(
+    "StockQuantityInput",
+    {
+        "quantity": fields.Integer(
+            required=True,
+            min=1,
+            description="Number of units",
+            example=3,
+        ),
+    },
+)
 
 
 ######################################################################
@@ -104,6 +129,12 @@ def list_products():
 class ProductCollection(Resource):
     """Operations on the product collection."""
 
+    @products_ns.param("name", "Exact product name", _in="query")
+    @products_ns.param("category", "Exact product category", _in="query")
+    @products_ns.param("min_price", "Minimum price (inclusive)", _in="query")
+    @products_ns.param("max_price", "Maximum price (inclusive)", _in="query")
+    @products_ns.response(200, "List of matching products")
+    @products_ns.response(400, "Invalid price filter or price range")
     def get(self):
         """List products, with optional filters."""
         try:
@@ -111,6 +142,10 @@ class ProductCollection(Resource):
         except BadRequest as error:
             return app.make_response(app.handle_http_exception(error))
 
+    @products_ns.expect(product_input, validate=False)
+    @products_ns.response(201, "Product created")
+    @products_ns.response(400, "Invalid product data")
+    @products_ns.response(415, "Content-Type must be application/json")
     def post(self):
         """Create a product."""
         try:
@@ -196,6 +231,9 @@ def get_products(product_id):
 class ProductResource(Resource):
     """Operations on an individual product."""
 
+    @products_ns.param("product_id", "ID of the product to retrieve", _in="path")
+    @products_ns.response(200, "Product found")
+    @products_ns.response(404, "Product not found")
     def get(self, product_id):
         """Retrieve a product by its ID."""
         try:
@@ -203,8 +241,16 @@ class ProductResource(Resource):
         except NotFound as error:
             return app.make_response(app.handle_http_exception(error))
 
+    @products_ns.param("product_id", "ID of the product to update", _in="path")
+    @products_ns.expect(product_input, validate=False)
+    @products_ns.response(200, "Product updated")
+    @products_ns.response(400, "Invalid product data")
+    @products_ns.response(404, "Product not found")
+    @products_ns.response(415, "Content-Type must be application/json")
     def put(self, product_id):
-        """Update a product by its ID."""
+        """Update a product by its ID.
+        Omitted optional fields are cleared.
+        """
         try:
             return app.make_response(update_products(product_id))
         except HTTPException as error:
@@ -212,6 +258,8 @@ class ProductResource(Resource):
         except DataValidationError as error:
             return app.make_response(app.handle_user_exception(error))
 
+    @products_ns.param("product_id", "ID of the product to delete", _in="path")
+    @products_ns.response(204, "Product deleted or already absent")
     def delete(self, product_id):
         """Delete a product by its ID."""
         return app.make_response(delete_product(product_id))
@@ -282,6 +330,21 @@ def purchase_product(product_id):
 class ProductPurchase(Resource):
     """Purchase products and decrease stock."""
 
+    @products_ns.param("product_id", "ID of the product to purchase", _in="path")
+    @products_ns.doc(body=stock_quantity_input)
+    @products_ns.param(
+        "payload",
+        "Optional JSON body. Omit it to purchase one unit.",
+        _in="body",
+        required=False,
+    )
+    @products_ns.response(200, "Product purchased")
+    @products_ns.response(400, "Invalid quantity or JSON body")
+    @products_ns.response(404, "Product not found")
+    @products_ns.response(409, "Insufficient stock")
+    @products_ns.response(
+        415, "Content-Type must be application/json when a body is sent"
+    )
     def put(self, product_id):
         """Purchase the requested quantity."""
         try:
@@ -314,6 +377,12 @@ def restock_product(product_id):
 class ProductRestock(Resource):
     """Restock an existing product."""
 
+    @products_ns.param("product_id", "ID of the product to restock", _in="path")
+    @products_ns.expect(stock_quantity_input, validate=False)
+    @products_ns.response(200, "Product restocked")
+    @products_ns.response(400, "Invalid quantity, invalid JSON body, or update failed")
+    @products_ns.response(404, "Product not found")
+    @products_ns.response(415, "Content-Type must be application/json")
     def post(self, product_id):
         """Add the requested quantity to stock."""
         try:
