@@ -163,10 +163,40 @@ $(function () {
                   <td>${p.stock}</td>
                   <td>${p.image_url}</td>
                 </tr>`
-            );
-        }
+           );
+       }
+   }
+
+// Story #43: Retrieve a product by ID
+$("#retrieve-btn").click(function (event) {
+    event.preventDefault();
+
+    let product_id = $("#product_id").val();
+
+    if (!product_id) {
+        flash_message("Please enter a Product ID");
+        return;
     }
 
+    $.ajax({
+        type: "GET",
+        url: "/products/" + product_id,
+        success: function (res) {
+            update_form_data(res);
+            flash_message("Product retrieved successfully");
+        },
+        error: function (xhr) {
+            clear_form_data();
+
+            if (xhr.status === 404) {
+                flash_message("Product not found");
+            } else {
+                flash_message("Error retrieving product");
+            }
+        }
+        });
+    }); 
+      
     // ****************************************
     // Search Products
     // ****************************************
@@ -213,4 +243,5 @@ $(function () {
             });
     });
 
-}); // end $(function)
+
+    }); // end $(function)
