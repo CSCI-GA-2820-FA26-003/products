@@ -13,104 +13,64 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ######################################################################
-"""
-Module: error_handlers
-"""
+"""Convert client and HTTP errors into JSON responses."""
 
-from flask import jsonify
-from flask import current_app as app  # Import Flask application
+from flask import current_app as app
+from werkzeug.exceptions import HTTPException
+
 from service.models import DataValidationError
-from . import status
 
 
-######################################################################
-# Error Handlers
-######################################################################
-@app.errorhandler(DataValidationError)
-def request_validation_error(error):
-    """Handles Value Errors from bad data"""
-    return bad_request(error)
+def error_payload(status_code, error, message):
+    """Create the common JSON error body."""
+    return {"status": status_code, "error": error, "message": message}
 
 
-@app.errorhandler(status.HTTP_400_BAD_REQUEST)
-def bad_request(error):
-    """Handles bad requests with 400_BAD_REQUEST"""
+def handle_http_exception(error):
+    """Return Flask HTTP errors as JSON and preserve protocol headers."""
+    status_code = error.code or 500
+    response = error.get_response()
+    response.set_data(
+        app.json.dumps(error_payload(status_code, error.name, error.description))
+    )
+    response.content_type = "application/json"
+
+    if status_code >= 500:
+        app.logger.error(error.description)
+    else:
+        app.logger.warning(error.description)
+
+    return response
+
+
+def handle_restx_http_exception(error):
+    """Return RESTX HTTP errors as JSON and preserve protocol headers."""
+    status_code = error.code or 500
+    response = error.get_response()
+    headers = {
+        name: value
+        for name, value in response.headers.items()
+        if name.lower() not in {"content-type", "content-length"}
+    }
+
+    if status_code >= 500:
+        app.logger.error(error.description)
+    else:
+        app.logger.warning(error.description)
+
+    return error_payload(status_code, error.name, error.description), status_code, headers
+
+
+def handle_data_validation_error(error):
+    """Treat invalid product input as a client error instead of a server error."""
     message = str(error)
     app.logger.warning(message)
-    return (
-        jsonify(
-            status=status.HTTP_400_BAD_REQUEST, error="Bad Request", message=message
-        ),
-        status.HTTP_400_BAD_REQUEST,
-    )
+    return error_payload(400, "Bad Request", message), 400
 
 
-@app.errorhandler(status.HTTP_404_NOT_FOUND)
-def not_found(error):
-    """Handles resources not found with 404_NOT_FOUND"""
-    message = str(error)
-    app.logger.warning(message)
-    return (
-        jsonify(status=status.HTTP_404_NOT_FOUND, error="Not Found", message=message),
-        status.HTTP_404_NOT_FOUND,
-    )
-
-
-@app.errorhandler(status.HTTP_405_METHOD_NOT_ALLOWED)
-def method_not_supported(error):
-    """Handles unsupported HTTP methods with 405_METHOD_NOT_SUPPORTED"""
-    message = str(error)
-    app.logger.warning(message)
-    return (
-        jsonify(
-            status=status.HTTP_405_METHOD_NOT_ALLOWED,
-            error="Method not Allowed",
-            message=message,
-        ),
-        status.HTTP_405_METHOD_NOT_ALLOWED,
-    )
-
-
-@app.errorhandler(status.HTTP_409_CONFLICT)
-def conflict(error):
-    """Handles conflicts such as out of stock with 409_CONFLICT"""
-    message = str(error)
-    app.logger.warning(message)
-    return (
-        jsonify(
-            status=status.HTTP_409_CONFLICT,
-            error="Conflict",
-            message=message,
-        ),
-        status.HTTP_409_CONFLICT,
-    )
-
-
-@app.errorhandler(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
-def mediatype_not_supported(error):
-    """Handles unsupported media requests with 415_UNSUPPORTED_MEDIA_TYPE"""
-    message = str(error)
-    app.logger.warning(message)
-    return (
-        jsonify(
-            status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            error="Unsupported media type",
-            message=message,
-        ),
-        status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-    )
-
-
-@app.errorhandler(status.HTTP_500_INTERNAL_SERVER_ERROR)
-def internal_server_error(error):
-    """Handles unexpected server error with 500_SERVER_ERROR"""
-    message = str(error)
-    app.logger.error(message)
-    return (
-        jsonify(
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            error="Internal Server Error",
-            message=message,
-        ),
-        status.HTTP_500_INTERNAL_SERVER_ERROR,
-    )
+def register_error_handlers(flask_app, api):
+    """Register the same JSON error format for Flask and Flask-RESTX routes."""
+    flask_app.register_error_handler(HTTPException, handle_http_exception)
+    flask_app.register_error_handler(DataValidationError, handle_data_validation_error)
+    api.errorhandler(HTTPException)(handle_restx_http_exception)
+    api.errorhandler(DataValidationError)(handle_data_validation_error)

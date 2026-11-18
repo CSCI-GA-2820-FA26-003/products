@@ -76,6 +76,9 @@ class Product(db.Model):
             except (InvalidOperation, TypeError, ValueError) as error:
                 raise DataValidationError("price must be a number") from error
 
+            if not self.price.is_finite():
+                raise DataValidationError("price must be a finite number")
+
             if self.price < 0:
                 raise DataValidationError("price cannot be negative")
 

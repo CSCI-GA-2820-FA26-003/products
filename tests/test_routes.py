@@ -199,6 +199,13 @@ class TestYourResourceService(TestCase):
         response = self.client.get(f"{BASE_URL}?min_price=abc")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_query_rejects_non_finite_price(self):
+        """It should return a JSON 400 for a non-finite price filter."""
+        response = self.client.get(BASE_URL, query_string={"min_price": "Infinity"})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.mimetype, "application/json")
+        self.assertIn("finite", response.get_json()["message"])
+
     def test_query_by_category(self):
         """It should Query Products by category"""
         for category in ["Clothing", "Clothing", "Food"]:
