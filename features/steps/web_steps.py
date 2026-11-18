@@ -152,3 +152,59 @@ def step_see_in_table(context, text_string):
         )
     )
     assert found
+
+@given('I have retrieved the product "{name}" on the admin page')
+def step_retrieve_product(context, name):
+    """Retrieve a product by name into the admin form."""
+    context.product_id = context.product_ids[name]
+    step_set_product_id(context, name)
+    step_press_retrieve(context)
+    WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.text_to_be_present_in_element_value(
+            (By.ID, "product_name"), name
+        )
+    )
+
+
+@when('I click the "Delete" button and I confirm the deletion')
+def step_click_delete_confirm(context):
+    """Click Delete and accept the confirmation dialog."""
+    context.driver.find_element(By.ID, "delete-btn").click()
+    WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.alert_is_present()
+    )
+    context.driver.switch_to.alert.accept()
+
+
+@when('I click the "Delete" button and I cancel the deletion')
+def step_click_delete_cancel(context):
+    """Click Delete and dismiss the confirmation dialog."""
+    context.driver.find_element(By.ID, "delete-btn").click()
+    WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.alert_is_present()
+    )
+    context.driver.switch_to.alert.dismiss()
+
+
+@then('retrieving product "{name}" should show a not-found message')
+def step_retrieve_not_found(context, name):
+    """Retrieve a deleted product and expect a not-found message."""
+    step_set_product_id(context, name)
+    step_press_retrieve(context)
+    WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.text_to_be_present_in_element(
+            (By.ID, "flash_message"), "not found"
+        )
+    )
+
+
+@then('retrieving product "{name}" should still show "{shown}"')
+def step_retrieve_still_show(context, name, shown):
+    """Retrieve a product that was not deleted and expect it to still show."""
+    step_set_product_id(context, name)
+    step_press_retrieve(context)
+    WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.text_to_be_present_in_element_value(
+            (By.ID, "product_name"), shown
+        )
+    )

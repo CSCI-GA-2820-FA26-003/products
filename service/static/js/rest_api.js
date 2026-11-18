@@ -243,5 +243,29 @@ $(function () {
             });
     });
 
+    // ****************************************
+    // Delete a Product
+    // ****************************************
+    $("#delete-btn").click(function () {
+        let id = $("#product_id").val();
+        if (!id) {
+            flash_message("Please enter a Product ID");
+            return;
+        }
+        if (!window.confirm("Are you sure you want to delete this product?")) {
+            return;
+        }
+        $("#flash_message").empty();
+        $.ajax({ type: "DELETE", url: "/api/products/" + id })
+            .done(function () {
+                clear_form_data();
+                $("#product_id").val("");
+                flash_message("Success");
+            })
+            .fail(function (res) {
+                const message = res.responseJSON && res.responseJSON.message;
+                flash_message(message || "Unable to delete product.");
+            });
+    });
 
 }); // end $(function)

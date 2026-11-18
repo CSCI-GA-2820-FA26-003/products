@@ -78,3 +78,14 @@ Scenario: Update a Product
     And the "Name" field should show "Green Shirt"
     When I press the "List Products" button
     Then I should see "Green Shirt" in the results table
+
+Scenario: Delete a Product and confirm
+    Given I have retrieved the product "Blue Shirt" on the admin page
+    When I click the "Delete" button and I confirm the deletion
+    Then I should see the message "Success"
+    And retrieving product "Blue Shirt" should show a not-found message
+
+Scenario: Delete a Product and cancel
+    Given I have retrieved the product "Blue Shirt" on the admin page
+    When I click the "Delete" button and I cancel the deletion
+    Then retrieving product "Blue Shirt" should still show "Blue Shirt"
