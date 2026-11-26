@@ -1,0 +1,7 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: products-cd
+spec:
+  workspaces:
+    - name: shared-workspace
